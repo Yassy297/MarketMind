@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_API_URL ?? 'http://localhost:5000';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -33,7 +33,7 @@ export async function loginUser(input: { email: string; password: string }) {
 }
 
 export async function fetchCurrentUser(token: string) {
-  return request<{ user: { id: string; email: string; name: string } }>('/me', {
+  return request<{ user: { id: string; email: string; name: string } }>('/auth/me', {
     headers: {
       Authorization: `Bearer ${token}`
     }

@@ -1,3 +1,23 @@
+import mongoose, { Schema, type Document as MongooseDocument } from 'mongoose';
+
+export interface IDocument extends MongooseDocument {
+  title: string;
+  content: string;
+  source?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const documentSchema = new Schema<IDocument>(
+  {
+    title: { type: String, required: true },
+    content: { type: String, required: true },
+    source: { type: String }
+  },
+  { timestamps: true }
+);
+
+export const Document = mongoose.model<IDocument>('Document', documentSchema);
 import mongoose, { Schema, type Document as MongooseDocument, type Types } from 'mongoose';
 
 export interface IDocument extends MongooseDocument {
