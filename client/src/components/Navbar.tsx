@@ -2,7 +2,7 @@ import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Search } from 'lucide-react';
 
-const Navbar: React.FC<{ collapsed?: boolean; onToggle?: () => void }> = ({ collapsed, onToggle }) => {
+const Navbar: React.FC<{ collapsed?: boolean; onToggle?: () => void }> = ({ onToggle }) => {
   const { user } = useAuth();
   return (
     <header className="h-16 flex items-center justify-between px-6 border-b border-gray-800 bg-gray-900">

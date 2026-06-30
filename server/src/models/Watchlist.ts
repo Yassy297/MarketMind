@@ -1,7 +1,7 @@
-import mongoose, { Schema, type Document as MongooseDocument } from 'mongoose';
+import mongoose, { Schema, type Document as MongooseDocument, type Types } from 'mongoose';
 
 export interface IWatchlist extends MongooseDocument {
-  userId: string;
+  userId: Types.ObjectId;
   symbols: string[];
   createdAt: Date;
   updatedAt: Date;
@@ -9,10 +9,16 @@ export interface IWatchlist extends MongooseDocument {
 
 const watchlistSchema = new Schema<IWatchlist>(
   {
-    userId: { type: String, required: true },
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
     symbols: { type: [String], default: [] }
   },
   { timestamps: true }
 );
+
+watchlistSchema.index({ userId: 1, createdAt: -1 });
 
 export const Watchlist = mongoose.model<IWatchlist>('Watchlist', watchlistSchema);

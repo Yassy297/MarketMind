@@ -2,7 +2,7 @@
 
 ## Overview
 
-MarketMind is a full-stack SaaS-style research dashboard with a React + Vite frontend and an Express + TypeScript + MongoDB backend. The project includes authentication, protected dashboard routes, and API endpoints for market-related content.
+MarketMind is a full-stack SaaS-style research dashboard with a React + Vite frontend and an Express + TypeScript + MongoDB backend. The project now includes authentication, protected dashboard routes, a real dashboard summary endpoint, and a responsive analytics UI for documents, watchlists, conversations, and recently viewed companies.
 
 ## Root Structure
 
@@ -10,6 +10,25 @@ MarketMind is a full-stack SaaS-style research dashboard with a React + Vite fro
 - `server/` - Express backend API and auth server
 - `README.md` - existing project README
 - `PROJECT_DOCUMENTATION.md` - this documentation file
+
+## Stock Intelligence Module
+
+The stock intelligence module now uses live Finnhub data end to end. The backend stores the API key in environment variables, keeps it server-side, and exposes protected endpoints for company search, profile, quote, news, analyst recommendations, and recently viewed history. The frontend provides a dedicated Stocks page with live search, company details, price cards, profile cards, news cards, recommendation cards, and recently viewed history.
+
+### Backend stock endpoints
+- `GET /api/stocks/search?q=`
+- `GET /api/stocks/:symbol/profile`
+- `GET /api/stocks/:symbol/quote`
+- `GET /api/stocks/:symbol/news`
+- `GET /api/stocks/:symbol/recommendation`
+- `GET /api/recently-viewed`
+
+### Frontend stock experience
+- Live search bar with result cards
+- Company detail view driven by backend profile and quote endpoints
+- Latest news feed and analyst recommendation widget
+- Recently viewed history persisted per authenticated user in MongoDB
+- React Query and Axios-based loading and error states
 
 ## Client Structure
 
@@ -41,16 +60,22 @@ MarketMind is a full-stack SaaS-style research dashboard with a React + Vite fro
   - `controllers/`
     - `auth.controller.ts` - auth request handlers
     - `api.controller.ts` - market-related API handlers
+    - `dashboard.controller.ts` - dashboard summary endpoint handler
   - `routes/`
     - `auth.routes.ts` - `/auth/login` and `/auth/register`
     - `api.routes.ts` - `/api/*` endpoints
+    - `dashboard.routes.ts` - `/api/dashboard` summary endpoint
   - `middleware/`
     - `auth.middleware.ts` - JWT bearer auth guard
   - `models/`
     - `User.ts` - user schema and model
-    - other models for chat/document/watchlist data
+    - `Document.ts` - user-owned document records
+    - `Conversation.ts` - user-owned conversation records
+    - `Watchlist.ts` - user-owned watchlist records
+    - `Activity.ts` - recent user activity feed and company views
   - `services/`
     - `auth.service.ts` - register/login logic, password hashing, JWT response build
+    - `dashboard.service.ts` - dashboard summary aggregation for authenticated users
   - `types/` - shared server types
 
 ## Authentication Flow
@@ -94,8 +119,16 @@ MarketMind is a full-stack SaaS-style research dashboard with a React + Vite fro
 `GET /api/documents`
 `GET /api/chat`
 `GET /api/watchlist`
+`GET /api/dashboard`
 
-These routes are defined in `server/src/routes/api.routes.ts` and connected through `server/src/app.ts`.
+The dashboard endpoint returns counts and recent activity for the authenticated user:
+- `documentsCount`
+- `watchlistCount`
+- `conversationsCount`
+- `recentlyViewedCompanies`
+- `recentActivity`
+
+These routes are defined in `server/src/routes/api.routes.ts` and `server/src/routes/dashboard.routes.ts`, and connected through `server/src/app.ts`.
 
 ## Environment Variables
 
@@ -146,5 +179,7 @@ npm run dev
 
 - Authentication flow wired through real backend endpoints
 - Protected dashboard routes in place
+- Dashboard page now loads live user-specific counts from the backend
+- Reusable dashboard UI components include stats cards, recent activity, and market snapshot panels
 - Frontend and backend connected using environment-driven API base URL
 - Core documentation and architecture layout defined in this file

@@ -3,8 +3,11 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from '@/routes/auth.routes';
 import apiRoutes from '@/routes/api.routes';
+import dashboardRoutes from '@/routes/dashboard.routes';
+import stockRoutes from '@/routes/stock.routes';
 import { requireAuth } from '@/middleware/auth.middleware';
 import { env } from '@/config/env';
+import { getRecentlyViewed } from '@/controllers/stock.controller';
 
 dotenv.config();
 
@@ -40,6 +43,8 @@ app.get('/auth/me', requireAuth, (req, res) => {
 });
 
 app.use('/auth', authRoutes);
-app.use('/api', apiRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/stocks', stockRoutes);
+app.get('/api/recently-viewed', requireAuth, getRecentlyViewed);
 
 export default app;

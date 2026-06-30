@@ -8,12 +8,14 @@ dotenv.config();
 const isProduction = process.env.NODE_ENV === 'production';
 const jwtSecret: string = process.env.JWT_SECRET ?? 'dev-secret-change-me';
 const frontendOrigin: string = process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173';
+const finnhubApiKey: string = process.env.FINNHUB_API_KEY ?? '';
 
 type Env = {
   port: number;
   jwtSecret: string;
   mongoUri: string;
   frontendOrigin: string;
+  finnhubApiKey: string;
 };
 
 export const env: Env = {
@@ -21,4 +23,5 @@ export const env: Env = {
   jwtSecret,
   mongoUri: process.env.MONGO_URI ?? process.env.MONGODB_URI ?? '',
   frontendOrigin,
+  finnhubApiKey,
 };
