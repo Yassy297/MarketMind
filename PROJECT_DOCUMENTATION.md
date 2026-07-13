@@ -8,6 +8,7 @@ MarketMind is a full-stack SaaS-style research dashboard with a React + Vite fro
 
 - `client/` - React frontend application
 - `server/` - Express backend API and auth server
+- `package.json` - npm workspaces root (`client`, `server`); installing once at the root installs both workspaces into a single `node_modules`
 - `README.md` - existing project README
 - `PROJECT_DOCUMENTATION.md` - this documentation file
 
@@ -44,7 +45,6 @@ The stock intelligence module now uses live Finnhub data end to end. The backend
   - `context/AuthContext.tsx` - auth state provider, token restore, logout logic
   - `services/api.ts` - Axios instance with base URL, auth header setter, 401 interceptor
   - `services/auth.service.ts` - frontend auth API wrapper for login/register/fetchMe
-  - `lib/api.ts` - legacy fetch-based API helpers
   - `components/` - UI components such as `Sidebar`, `Navbar`, cards, buttons, inputs, etc.
 
 ## Server Structure
@@ -151,20 +151,27 @@ These routes are defined in `server/src/routes/api.routes.ts` and `server/src/ro
 
 ## Running the Project
 
-### Backend
+Dependencies are managed with npm workspaces from the repo root — run `npm install` once at the project root; it installs both `client` and `server` into a single top-level `node_modules`.
+
+### Both (from root)
 
 ```bash
-cd server
 npm install
 npm run dev
 ```
 
-### Frontend
+This runs the backend and frontend dev servers concurrently.
+
+### Backend only
 
 ```bash
-cd client
-npm install
-npm run dev
+npm run dev -w server
+```
+
+### Frontend only
+
+```bash
+npm run dev -w client
 ```
 
 ## Notes

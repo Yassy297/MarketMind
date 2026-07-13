@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from '@/routes/auth.routes';
-import apiRoutes from '@/routes/api.routes';
 import dashboardRoutes from '@/routes/dashboard.routes';
 import stockRoutes from '@/routes/stock.routes';
 import { requireAuth } from '@/middleware/auth.middleware';
