@@ -33,7 +33,7 @@ const AuthLayout: React.FC = () => {
             <div className="text-center">
               <h3 className="text-xl font-semibold text-white">Research smarter, not harder</h3>
               <p className="mx-auto mt-2 max-w-xs text-sm text-slate-400">
-                Track markets, chat with your documents, and manage watchlists — all in one focused workspace.
+                Track markets, chat with your documents, and manage watchlists - all in one focused workspace.
               </p>
             </div>
           </div>

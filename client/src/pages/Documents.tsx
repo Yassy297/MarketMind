@@ -65,10 +65,10 @@ const Documents: React.FC = () => {
               {data.map((doc) => (
                 <tr key={doc.id} className="border-b border-white/4 last:border-0 hover:bg-white/[0.02]">
                   <td className="px-5 py-3.5 font-medium text-white">{doc.title}</td>
-                  <td className="px-5 py-3.5 text-slate-300">{doc.type ?? '—'}</td>
-                  <td className="px-5 py-3.5 text-slate-300">{doc.company ?? '—'}</td>
-                  <td className="px-5 py-3.5 text-slate-500">{doc.uploadedAt ?? '—'}</td>
-                  <td className="px-5 py-3.5 text-slate-500">{doc.size ?? '—'}</td>
+                  <td className="px-5 py-3.5 text-slate-300">{doc.type ?? '-'}</td>
+                  <td className="px-5 py-3.5 text-slate-300">{doc.company ?? '-'}</td>
+                  <td className="px-5 py-3.5 text-slate-500">{doc.uploadedAt ?? '-'}</td>
+                  <td className="px-5 py-3.5 text-slate-500">{doc.size ?? '-'}</td>
                 </tr>
               ))}
             </tbody>

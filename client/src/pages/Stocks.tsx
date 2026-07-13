@@ -66,10 +66,10 @@ const Stocks: React.FC = () => {
     const quote = quoteQuery.data;
     const profile = profileQuery.data;
     return [
-      { label: 'Current Price', value: quote ? `$${quote.currentPrice.toFixed(2)}` : '—' },
-      { label: 'Day Change', value: quote ? `${quote.change.toFixed(2)} (${quote.percentChange.toFixed(1)}%)` : '—' },
-      { label: 'Market Cap', value: profile ? `$${(profile.marketCapitalization / 1e9).toFixed(1)}B` : '—' },
-      { label: 'Currency', value: profile?.currency ?? '—' }
+      { label: 'Current Price', value: quote ? `$${quote.currentPrice.toFixed(2)}` : '-' },
+      { label: 'Day Change', value: quote ? `${quote.change.toFixed(2)} (${quote.percentChange.toFixed(1)}%)` : '-' },
+      { label: 'Market Cap', value: profile?.marketCapitalization ? `$${(profile.marketCapitalization / 1e3).toFixed(1)}B` : '-' },
+      { label: 'Currency', value: profile?.currency ?? '-' }
     ];
   }, [profileQuery.data, quoteQuery.data]);
 
@@ -155,7 +155,7 @@ const Stocks: React.FC = () => {
             {!searchQuery.isLoading && !searchQuery.isError && (
               <div className="space-y-2">
                 {(searchQuery.data ?? []).length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-white/10 p-4 text-center text-sm text-slate-500">No matches yet — try a different symbol.</div>
+                  <div className="rounded-lg border border-dashed border-white/10 p-4 text-center text-sm text-slate-500">No matches yet - try a different symbol.</div>
                 ) : (
                   (searchQuery.data ?? []).slice(0, 6).map((item) => (
                     <StockCard key={item.symbol} symbol={item.symbol} description={item.description} onSelect={setSelectedSymbol} />

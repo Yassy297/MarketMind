@@ -37,7 +37,7 @@ const Settings: React.FC = () => {
             </div>
           </div>
           <p className="mt-4 text-sm text-slate-500">
-            Profile editing isn't available yet — reach out to support if you need to update your account details.
+            Profile editing isn't available yet - reach out to support if you need to update your account details.
           </p>
         </DashboardCard>
 

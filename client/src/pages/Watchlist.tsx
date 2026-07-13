@@ -68,11 +68,11 @@ const Watchlist: React.FC = () => {
                     <div className="font-medium text-white">{item.symbol}</div>
                     {item.name && <div className="text-xs text-slate-500">{item.name}</div>}
                   </td>
-                  <td className="px-5 py-3.5 text-slate-300">{item.price ? `$${item.price.toFixed(2)}` : '—'}</td>
+                  <td className="px-5 py-3.5 text-slate-300">{item.price ? `$${item.price.toFixed(2)}` : '-'}</td>
                   <td className={`px-5 py-3.5 ${(item.percentChange ?? 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {item.percentChange !== undefined ? `${item.percentChange.toFixed(2)}%` : '—'}
+                    {item.percentChange !== undefined ? `${item.percentChange.toFixed(2)}%` : '-'}
                   </td>
-                  <td className="px-5 py-3.5 text-slate-300">{item.marketCap ?? '—'}</td>
+                  <td className="px-5 py-3.5 text-slate-300">{item.marketCap ?? '-'}</td>
                   <td className="px-5 py-3.5 text-right">
                     <button className="rounded-lg p-1.5 text-slate-500 hover:bg-white/5 hover:text-slate-200">
                       <MoreHorizontal className="h-4 w-4" />

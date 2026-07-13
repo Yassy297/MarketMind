@@ -22,7 +22,7 @@ export type RegisterInput = {
   password: string;
 };
 
-// The server sets httpOnly access/refresh cookies on these calls — no token is
+// The server sets httpOnly access/refresh cookies on these calls - no token is
 // ever exposed to client-side JS, and the browser sends the cookies automatically
 // on subsequent requests (withCredentials: true in api.ts).
 export async function login(input: LoginInput): Promise<AuthResponse> {

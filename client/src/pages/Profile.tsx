@@ -33,14 +33,14 @@ const Profile: React.FC = () => {
             <UserIcon className="h-4 w-4 text-slate-500" />
             <div>
               <div className="text-xs uppercase tracking-wider text-slate-500">Full name</div>
-              <div className="text-sm font-medium text-slate-200">{user?.name ?? '—'}</div>
+              <div className="text-sm font-medium text-slate-200">{user?.name ?? '-'}</div>
             </div>
           </div>
           <div className="flex items-center gap-3 rounded-xl border border-white/6 bg-white/[0.02] px-4 py-3">
             <Mail className="h-4 w-4 text-slate-500" />
             <div>
               <div className="text-xs uppercase tracking-wider text-slate-500">Email</div>
-              <div className="text-sm font-medium text-slate-200">{user?.email ?? '—'}</div>
+              <div className="text-sm font-medium text-slate-200">{user?.email ?? '-'}</div>
             </div>
           </div>
         </div>
