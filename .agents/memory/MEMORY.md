@@ -1,2 +1,0 @@
-- [Local MongoDB for this project](mongo-local-dev.md) — MONGO_URI secret points to localhost:27017; a local mongod must run via a dedicated workflow.
-- [Auth architecture](auth-architecture.md) — cookie-based JWT access+refresh tokens with rotation; vite proxy must not blind-proxy paths that are also client page routes.
