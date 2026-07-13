@@ -32,7 +32,7 @@ class DashboardService {
       Watchlist.countDocuments({ userId: userObjectId }),
       Conversation.countDocuments({ userId: userObjectId }),
       Activity.find({ userId: userObjectId }).sort({ createdAt: -1 }).limit(6).lean(),
-      RecentlyViewed.find({ userId: userObjectId }).sort({ viewedAt: -1 }).limit(5).lean()
+      RecentlyViewed.find({ user: userObjectId }).sort({ viewedAt: -1 }).limit(5).lean()
     ]);
 
     const recentlyViewedCompanies = recentCompanies.map((item) => ({

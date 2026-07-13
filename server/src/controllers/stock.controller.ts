@@ -76,6 +76,16 @@ export const getRecommendation = async (req: Request, res: Response) => {
   }
 };
 
+export const getMarketNews = async (_req: Request, res: Response) => {
+  try {
+    const news = await stockService.getGeneralMarketNews();
+    res.json(news);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to load market news.';
+    res.status(500).json({ message });
+  }
+};
+
 export const getRecentlyViewed = async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {

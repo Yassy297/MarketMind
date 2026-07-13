@@ -139,6 +139,21 @@ class StockService {
     };
   }
 
+  async getGeneralMarketNews(limit = 6): Promise<StockNewsItem[]> {
+    const { data } = await finnhubClient.get<Array<Record<string, unknown>>>('/news', {
+      params: { category: 'general' }
+    });
+
+    return (data ?? []).slice(0, limit).map((item: Record<string, unknown>) => ({
+      id: String(item.id ?? ''),
+      headline: String(item.headline ?? ''),
+      summary: String(item.summary ?? ''),
+      url: String(item.url ?? ''),
+      datetime: Number(item.datetime ?? 0),
+      source: String(item.source ?? '')
+    }));
+  }
+
   async recordRecentlyViewed(userId: string, symbol: string, company: string): Promise<void> {
     const userObjectId = new Types.ObjectId(userId);
 
