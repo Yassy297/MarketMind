@@ -1,4 +1,5 @@
 import React from 'react';
+import { ArrowUpRight } from 'lucide-react';
 
 type StockCardProps = {
   symbol: string;
@@ -11,14 +12,14 @@ const StockCard: React.FC<StockCardProps> = ({ symbol, description, onSelect }) 
     <button
       type="button"
       onClick={() => onSelect(symbol)}
-      className="w-full rounded-lg border border-gray-800 bg-gray-900/80 p-4 text-left transition hover:border-indigo-500"
+      className="group w-full rounded-xl border border-white/6 bg-white/[0.02] p-3.5 text-left transition hover:border-violet-500/40 hover:bg-white/[0.04]"
     >
       <div className="flex items-center justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <div className="font-semibold text-white">{symbol}</div>
-          <div className="mt-1 text-sm text-gray-400">{description}</div>
+          <div className="mt-0.5 truncate text-sm text-slate-400">{description}</div>
         </div>
-        <span className="text-sm text-indigo-400">Open</span>
+        <ArrowUpRight className="h-4 w-4 shrink-0 text-slate-600 transition group-hover:text-violet-300" />
       </div>
     </button>
   );

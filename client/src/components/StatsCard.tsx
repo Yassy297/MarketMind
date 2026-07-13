@@ -1,5 +1,6 @@
 import React from 'react';
 import DashboardCard from './DashboardCard';
+import type { LucideIcon } from 'lucide-react';
 
 type StatsCardProps = {
   title: string;
@@ -7,27 +8,33 @@ type StatsCardProps = {
   subtitle?: string;
   loading?: boolean;
   accent?: 'default' | 'success' | 'warning' | 'accent';
+  icon?: LucideIcon;
 };
 
 const accentClasses: Record<NonNullable<StatsCardProps['accent']>, string> = {
-  default: 'border-gray-800',
-  success: 'border-emerald-600/40 bg-emerald-950/25',
-  warning: 'border-amber-600/40 bg-amber-950/25',
-  accent: 'border-indigo-600/40 bg-indigo-950/25'
+  default: 'bg-slate-500/15 text-slate-300',
+  success: 'bg-emerald-500/15 text-emerald-300',
+  warning: 'bg-amber-500/15 text-amber-300',
+  accent: 'bg-violet-500/15 text-violet-300'
 };
 
-const StatsCard: React.FC<StatsCardProps> = ({ title, value, subtitle, loading = false, accent = 'default' }) => {
+const StatsCard: React.FC<StatsCardProps> = ({ title, value, subtitle, loading = false, accent = 'default', icon: Icon }) => {
   return (
     <DashboardCard>
-      <div className={`rounded-lg border p-4 ${accentClasses[accent]}`}>
-        <div className="text-sm text-gray-400">{title}</div>
-        {loading ? (
-          <div className="mt-3 h-8 w-24 animate-pulse rounded bg-gray-700" />
-        ) : (
-          <div className="mt-2 text-2xl font-semibold text-white">{value}</div>
+      <div className="flex items-start justify-between">
+        <div className="text-sm font-medium text-slate-400">{title}</div>
+        {Icon && (
+          <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${accentClasses[accent]}`}>
+            <Icon className="h-4 w-4" />
+          </div>
         )}
-        {subtitle ? <div className="mt-2 text-sm text-gray-500">{subtitle}</div> : null}
       </div>
+      {loading ? (
+        <div className="mt-4 h-8 w-24 animate-pulse rounded bg-white/5" />
+      ) : (
+        <div className="mt-3 text-3xl font-semibold tracking-tight text-white">{value}</div>
+      )}
+      {subtitle ? <div className="mt-2 text-sm text-slate-500">{subtitle}</div> : null}
     </DashboardCard>
   );
 };

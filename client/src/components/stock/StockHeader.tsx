@@ -9,17 +9,19 @@ type StockHeaderProps = {
 
 const StockHeader: React.FC<StockHeaderProps> = ({ symbol, name, exchange, loading = false }) => {
   return (
-    <div className="rounded-xl border border-gray-800 bg-gray-950/70 p-6">
+    <div className="rounded-2xl border border-white/6 bg-ink-900/80 p-6 shadow-card">
       {loading ? (
         <div className="space-y-3">
-          <div className="h-6 w-32 animate-pulse rounded bg-gray-800" />
-          <div className="h-4 w-48 animate-pulse rounded bg-gray-800" />
+          <div className="h-4 w-24 animate-pulse rounded bg-white/5" />
+          <div className="h-8 w-48 animate-pulse rounded bg-white/5" />
         </div>
       ) : (
         <>
-          <div className="text-sm uppercase tracking-[0.2em] text-indigo-400">{exchange}</div>
-          <h2 className="mt-2 text-3xl font-semibold text-white">{name}</h2>
-          <div className="mt-2 text-sm text-gray-400">{symbol}</div>
+          <div className="flex items-center gap-2">
+            <span className="rounded-md bg-violet-500/15 px-2 py-0.5 text-xs font-semibold uppercase tracking-wider text-violet-300">{exchange}</span>
+            <span className="text-sm text-slate-500">{symbol}</span>
+          </div>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white">{name}</h2>
         </>
       )}
     </div>

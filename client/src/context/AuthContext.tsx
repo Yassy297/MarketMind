@@ -1,72 +1,52 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { AuthUser, fetchMe } from '../services/auth.service';
-import { setAuthToken } from '../services/api';
+import { AuthUser, fetchMe, logout as logoutRequest } from '../services/auth.service';
 
 type AuthContextValue = {
   user: AuthUser | null;
-  token: string | null;
   loading: boolean;
-  setToken: (t: string | null, user?: AuthUser | null) => void;
-  logout: () => void;
+  setUser: (user: AuthUser | null) => void;
+  logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [token, setTokenState] = useState<string | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const logout = useCallback(() => {
-    setTokenState(null);
+  const logout = useCallback(async () => {
     setUser(null);
-    localStorage.removeItem('marketmind-token');
-    setAuthToken(null);
-  }, []);
-
-  const setToken = useCallback((t: string | null, user?: AuthUser | null) => {
-    setTokenState(t);
-    if (t) {
-      localStorage.setItem('marketmind-token', t);
-      setAuthToken(t);
-      setUser(user ?? null);
-    } else {
-      localStorage.removeItem('marketmind-token');
-      setAuthToken(null);
-      setUser(null);
+    try {
+      await logoutRequest();
+    } catch {
+      // Session is already gone locally; nothing else to do if the server call fails.
     }
   }, []);
 
   useEffect(() => {
-    const stored = localStorage.getItem('marketmind-token');
-    if (!stored) {
-      setLoading(false);
-      return;
-    }
-
-    setAuthToken(stored);
+    // Session lives in an httpOnly cookie set by the server, so hydrate by asking
+    // the API who the current user is rather than reading anything from storage.
     fetchMe()
       .then((data) => {
-        setTokenState(stored);
         setUser(data.user);
       })
       .catch(() => {
-        logout();
+        setUser(null);
       })
       .finally(() => {
         setLoading(false);
       });
-  }, [logout]);
+  }, []);
 
   useEffect(() => {
-    const handleUnauthorized = () => logout();
+    const handleUnauthorized = () => setUser(null);
     globalThis.addEventListener('auth:unauthorized', handleUnauthorized);
     return () => globalThis.removeEventListener('auth:unauthorized', handleUnauthorized);
-  }, [logout]);
+  }, []);
 
   const contextValue = React.useMemo(
-    () => ({ user, token, loading, setToken, logout }),
-    [user, token, loading, setToken, logout],
+    () => ({ user, loading, setUser, logout }),
+    [user, loading, logout],
   );
 
   return (

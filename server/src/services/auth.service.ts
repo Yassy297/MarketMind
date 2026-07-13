@@ -1,17 +1,47 @@
+import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
-import type { AuthResponse, AuthUser, LoginInput, RegisterInput } from '../types/auth';
+import type { AuthUser, LoginInput, RegisterInput } from '../types/auth';
 import { User, type IUser } from '../models/User';
+import { RefreshToken } from '../models/RefreshToken';
+
+type TokenPair = {
+  accessToken: string;
+  refreshToken: string;
+  user: AuthUser;
+};
+
+function hashToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+function toAuthUser(user: IUser): AuthUser {
+  return {
+    id: user._id.toString(),
+    email: user.email,
+    name: user.name,
+    role: user.role
+  };
+}
+
+function signAccessToken(user: IUser): string {
+  return jwt.sign(
+    {
+      id: user._id.toString(),
+      email: user.email,
+      name: user.name,
+      role: user.role
+    },
+    env.jwtSecret,
+    { expiresIn: `${env.accessTokenTtlMinutes}m` }
+  );
+}
 
 class AuthService {
-  async register(input: RegisterInput): Promise<AuthResponse> {
+  async register(input: RegisterInput): Promise<TokenPair> {
     const email = input.email.trim().toLowerCase();
     const name = input.name.trim();
-
-    if (!email || !name || input.password.length < 6) {
-      throw new Error('Please provide a valid name, email, and password with at least 6 characters.');
-    }
 
     const existing = await User.findOne({ email });
     if (existing) {
@@ -27,10 +57,10 @@ class AuthService {
       watchlist: []
     });
 
-    return this.buildAuthResponse(user);
+    return this.issueTokenPair(user);
   }
 
-  async login(input: LoginInput): Promise<AuthResponse> {
+  async login(input: LoginInput): Promise<TokenPair> {
     const email = input.email.trim().toLowerCase();
     const user = await User.findOne({ email });
 
@@ -43,29 +73,51 @@ class AuthService {
       throw new Error('Invalid email or password.');
     }
 
-    return this.buildAuthResponse(user);
+    return this.issueTokenPair(user);
   }
 
-  private buildAuthResponse(user: IUser): AuthResponse {
-    const token = jwt.sign(
-      {
-        id: user._id.toString(),
-        email: user.email,
-        name: user.name,
-        role: user.role
-      },
-      env.jwtSecret,
-      { expiresIn: '1h' }
-    );
+  async refresh(rawToken: string): Promise<TokenPair> {
+    const tokenHash = hashToken(rawToken);
+    const existing = await RefreshToken.findOne({ tokenHash });
 
-    const authUser: AuthUser = {
-      id: user._id.toString(),
-      email: user.email,
-      name: user.name,
-      role: user.role
+    if (!existing || existing.revokedAt || existing.expiresAt.getTime() < Date.now()) {
+      throw new Error('Your session has expired. Please sign in again.');
+    }
+
+    const user = await User.findById(existing.user);
+    if (!user) {
+      throw new Error('Your session has expired. Please sign in again.');
+    }
+
+    // Rotate: revoke the used refresh token so it can never be replayed.
+    existing.revokedAt = new Date();
+    await existing.save();
+
+    return this.issueTokenPair(user);
+  }
+
+  async revokeRefreshToken(rawToken: string): Promise<void> {
+    const tokenHash = hashToken(rawToken);
+    await RefreshToken.updateOne({ tokenHash, revokedAt: { $exists: false } }, { revokedAt: new Date() });
+  }
+
+  private async issueTokenPair(user: IUser): Promise<TokenPair> {
+    const accessToken = signAccessToken(user);
+
+    const rawRefreshToken = crypto.randomBytes(48).toString('hex');
+    const expiresAt = new Date(Date.now() + env.refreshTokenTtlDays * 24 * 60 * 60 * 1000);
+
+    await RefreshToken.create({
+      user: user._id,
+      tokenHash: hashToken(rawRefreshToken),
+      expiresAt
+    });
+
+    return {
+      accessToken,
+      refreshToken: rawRefreshToken,
+      user: toAuthUser(user)
     };
-
-    return { token, user: authUser };
   }
 }
 

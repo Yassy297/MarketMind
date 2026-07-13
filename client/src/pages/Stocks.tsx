@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Newspaper } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import StockSearch from '../components/stock/StockSearch';
 import StockCard from '../components/stock/StockCard';
@@ -74,7 +75,7 @@ const Stocks: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Stock Intelligence" />
+      <PageHeader title="Stock Intelligence" subtitle="Search and analyze stocks with live market data." />
 
       <StockSearch
         query={query}
@@ -98,57 +99,68 @@ const Stocks: React.FC = () => {
             ))}
           </div>
 
-          <div className="rounded-xl border border-gray-800 bg-gray-950/70 p-4">
+          <div className="rounded-2xl border border-white/6 bg-ink-900/80 p-5 shadow-card">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-semibold text-white">Latest news</h3>
-              <span className="text-sm text-gray-500">Finnhub feed</span>
+              <h3 className="flex items-center gap-2 font-semibold text-white">
+                <Newspaper className="h-4 w-4 text-slate-500" />
+                Latest news
+              </h3>
+              <span className="text-xs uppercase tracking-wider text-slate-500">Finnhub feed</span>
             </div>
             {newsQuery.isLoading && (
               <div className="space-y-3">
-                <div className="h-20 animate-pulse rounded bg-gray-800" />
-                <div className="h-20 animate-pulse rounded bg-gray-800" />
+                <div className="h-20 animate-pulse rounded-lg bg-white/5" />
+                <div className="h-20 animate-pulse rounded-lg bg-white/5" />
               </div>
             )}
             {newsQuery.isError && !newsQuery.isLoading && (
-              <div className="rounded border border-red-500/30 bg-red-950/20 p-3 text-sm text-red-300">Unable to load the latest news.</div>
+              <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 p-3 text-sm text-rose-300">Unable to load the latest news.</div>
             )}
             {!newsQuery.isLoading && !newsQuery.isError && (
               <div className="grid gap-3">
-                {(newsQuery.data ?? []).map((item) => (
-                  <NewsCard
-                    key={item.id}
-                    headline={item.headline}
-                    summary={item.summary}
-                    source={item.source}
-                    datetime={new Date(item.datetime * 1000).toLocaleString()}
-                    url={item.url}
-                  />
-                ))}
+                {(newsQuery.data ?? []).length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-white/10 p-4 text-center text-sm text-slate-500">No recent news for this symbol.</div>
+                ) : (
+                  (newsQuery.data ?? []).map((item) => (
+                    <NewsCard
+                      key={item.id}
+                      headline={item.headline}
+                      summary={item.summary}
+                      source={item.source}
+                      datetime={new Date(item.datetime * 1000).toLocaleString()}
+                      url={item.url}
+                    />
+                  ))
+                )}
               </div>
             )}
           </div>
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-xl border border-gray-800 bg-gray-950/70 p-4">
+          <div className="rounded-2xl border border-white/6 bg-ink-900/80 p-5 shadow-card">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="font-semibold text-white">Search results</h3>
-              <span className="text-sm text-gray-500">Autocomplete</span>
+              <span className="text-xs uppercase tracking-wider text-slate-500">Autocomplete</span>
             </div>
             {searchQuery.isLoading && (
               <div className="space-y-2">
-                <div className="h-16 animate-pulse rounded bg-gray-800" />
-                <div className="h-16 animate-pulse rounded bg-gray-800" />
+                <div className="h-16 animate-pulse rounded-lg bg-white/5" />
+                <div className="h-16 animate-pulse rounded-lg bg-white/5" />
               </div>
             )}
             {searchQuery.isError && !searchQuery.isLoading && (
-              <div className="rounded border border-red-500/30 bg-red-950/20 p-3 text-sm text-red-300">Unable to search stocks.</div>
+              <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 p-3 text-sm text-rose-300">Unable to search stocks.</div>
             )}
             {!searchQuery.isLoading && !searchQuery.isError && (
               <div className="space-y-2">
-                {(searchQuery.data ?? []).slice(0, 6).map((item) => (
-                  <StockCard key={item.symbol} symbol={item.symbol} description={item.description} onSelect={setSelectedSymbol} />
-                ))}
+                {(searchQuery.data ?? []).length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-white/10 p-4 text-center text-sm text-slate-500">No matches yet — try a different symbol.</div>
+                ) : (
+                  (searchQuery.data ?? []).slice(0, 6).map((item) => (
+                    <StockCard key={item.symbol} symbol={item.symbol} description={item.description} onSelect={setSelectedSymbol} />
+                  ))
+                )}
               </div>
             )}
           </div>
@@ -161,28 +173,32 @@ const Stocks: React.FC = () => {
             loading={recommendationQuery.isLoading}
           />
 
-          <div className="rounded-xl border border-gray-800 bg-gray-950/70 p-4">
+          <div className="rounded-2xl border border-white/6 bg-ink-900/80 p-5 shadow-card">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="font-semibold text-white">Recently viewed</h3>
-              <span className="text-sm text-gray-500">Your last 5</span>
+              <span className="text-xs uppercase tracking-wider text-slate-500">Your last 5</span>
             </div>
             {recentlyViewedQuery.isLoading && (
               <div className="space-y-2">
-                <div className="h-10 animate-pulse rounded bg-gray-800" />
-                <div className="h-10 animate-pulse rounded bg-gray-800" />
+                <div className="h-10 animate-pulse rounded-lg bg-white/5" />
+                <div className="h-10 animate-pulse rounded-lg bg-white/5" />
               </div>
             )}
             {recentlyViewedQuery.isError && !recentlyViewedQuery.isLoading && (
-              <div className="rounded border border-red-500/30 bg-red-950/20 p-3 text-sm text-red-300">Unable to load recently viewed companies.</div>
+              <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 p-3 text-sm text-rose-300">Unable to load recently viewed companies.</div>
             )}
             {!recentlyViewedQuery.isLoading && !recentlyViewedQuery.isError && (
               <div className="space-y-2">
-                {(recentlyViewedQuery.data ?? []).map((item) => (
-                  <div key={`${item.symbol}-${item.viewedAt}`} className="rounded-lg border border-gray-800 bg-gray-900/70 p-3">
-                    <div className="font-medium text-white">{item.symbol}</div>
-                    <div className="text-sm text-gray-400">{item.company}</div>
-                  </div>
-                ))}
+                {(recentlyViewedQuery.data ?? []).length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-white/10 p-4 text-center text-sm text-slate-500">Nothing viewed yet.</div>
+                ) : (
+                  (recentlyViewedQuery.data ?? []).map((item) => (
+                    <div key={`${item.symbol}-${item.viewedAt}`} className="rounded-xl border border-white/6 bg-white/[0.02] p-3">
+                      <div className="font-medium text-white">{item.symbol}</div>
+                      <div className="text-sm text-slate-400">{item.company}</div>
+                    </div>
+                  ))
+                )}
               </div>
             )}
           </div>

@@ -1,22 +1,21 @@
 import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
+import { ACCESS_TOKEN_COOKIE } from '../utils/cookies';
 
 export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+  const cookieToken = req.cookies?.[ACCESS_TOKEN_COOKIE];
   const header = req.headers.authorization;
-  if (!header?.startsWith('Bearer ')) {
+  const headerToken = header?.startsWith('Bearer ') ? header.slice('Bearer '.length) : undefined;
+  const token = cookieToken ?? headerToken;
+
+  if (!token) {
     res.status(401).json({ message: 'Authentication required.' });
     return;
   }
 
-  const token = header.replace('Bearer ', '');
-
   try {
-    const secret = env.jwtSecret;
-    if (!secret) {
-      throw new Error('Authentication secret is not configured.');
-    }
-    const payload = jwt.verify(token, secret) as {
+    const payload = jwt.verify(token, env.jwtSecret) as {
       id: string;
       email: string;
       name: string;
@@ -26,7 +25,7 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
     req.user = payload;
     next();
   } catch {
-    res.status(401).json({ message: 'Invalid authentication token.' });
+    res.status(401).json({ message: 'Invalid or expired authentication token.' });
   }
 };
 

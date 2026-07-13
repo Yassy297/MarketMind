@@ -5,18 +5,32 @@ import Button from '../components/ui/button';
 import Input from '../components/ui/input';
 import { register } from '../services/auth.service';
 
+const GoogleIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24">
+    <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.2-2.27H12v4.3h6.47a5.53 5.53 0 0 1-2.4 3.63v3h3.88c2.27-2.09 3.54-5.17 3.54-8.66z" />
+    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3a7.4 7.4 0 0 1-11-3.9H.9v3.1A12 12 0 0 0 12 24z" />
+    <path fill="#FBBC05" d="M5.05 14.19a7.2 7.2 0 0 1 0-4.38v-3.1H.9a12 12 0 0 0 0 10.58z" />
+    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.44-3.44C17.94 1.19 15.24 0 12 0A12 12 0 0 0 .9 6.71l4.15 3.1A7.16 7.16 0 0 1 12 4.75z" />
+  </svg>
+);
+
 const Register: React.FC = () => {
-  const { setToken } = useAuth();
+  const { setUser } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
     if (!acceptedTerms) {
       setError('You must agree to the terms to continue.');
       return;
@@ -27,7 +41,7 @@ const Register: React.FC = () => {
 
     try {
       const response = await register({ name, email, password });
-      setToken(response.token, response.user);
+      setUser(response.user);
       navigate('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed');
@@ -37,12 +51,13 @@ const Register: React.FC = () => {
   };
 
   return (
-    <div>
-      <form className="space-y-6" onSubmit={handleSubmit}>
-        <h2 className="text-2xl font-semibold">Create an account</h2>
+    <div className="w-full max-w-sm">
+      <h2 className="text-[26px] font-semibold tracking-tight text-white">Create an account</h2>
+      <p className="mt-1.5 text-sm text-slate-400">Start your journey with MarketMind.</p>
 
-        <div className="space-y-1">
-          <label htmlFor="register-name" className="text-sm text-gray-400">Full name</label>
+      <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+        <div className="space-y-1.5">
+          <label htmlFor="register-name" className="text-sm font-medium text-slate-300">Full name</label>
           <Input
             id="register-name"
             required
@@ -53,8 +68,8 @@ const Register: React.FC = () => {
           />
         </div>
 
-        <div className="space-y-1">
-          <label htmlFor="register-email" className="text-sm text-gray-400">Email</label>
+        <div className="space-y-1.5">
+          <label htmlFor="register-email" className="text-sm font-medium text-slate-300">Email address</label>
           <Input
             id="register-email"
             required
@@ -66,8 +81,8 @@ const Register: React.FC = () => {
           />
         </div>
 
-        <div className="space-y-1">
-          <label htmlFor="register-password" className="text-sm text-gray-400">Password</label>
+        <div className="space-y-1.5">
+          <label htmlFor="register-password" className="text-sm font-medium text-slate-300">Password</label>
           <Input
             id="register-password"
             required
@@ -80,29 +95,52 @@ const Register: React.FC = () => {
           />
         </div>
 
+        <div className="space-y-1.5">
+          <label htmlFor="register-confirm-password" className="text-sm font-medium text-slate-300">Confirm password</label>
+          <Input
+            id="register-confirm-password"
+            required
+            minLength={6}
+            type="password"
+            placeholder="Re-enter your password"
+            name="confirmPassword"
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+          />
+        </div>
+
         <div className="flex items-start gap-3">
           <input
             id="terms"
             type="checkbox"
             checked={acceptedTerms}
             onChange={(event) => setAcceptedTerms(event.target.checked)}
-            className="mt-1 h-4 w-4 rounded border-white/10 bg-gray-900 text-indigo-500 focus:ring-indigo-500"
+            className="mt-0.5 h-4 w-4 rounded border-white/15 bg-ink-900 text-violet-500 focus:ring-violet-500"
           />
-          <label htmlFor="terms" className="text-sm text-gray-400">
-            I agree to the Terms of Service and Privacy Policy.
+          <label htmlFor="terms" className="text-sm text-slate-400">
+            I agree to the <span className="text-slate-300">Terms of Service</span> and <span className="text-slate-300">Privacy Policy</span>.
           </label>
         </div>
 
-        {error ? <div className="text-sm text-red-400">{error}</div> : null}
+        {error ? <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">{error}</div> : null}
 
-        <div className="pt-2">
-          <Button type="submit" disabled={isSubmitting} className="w-full py-3">
-            {isSubmitting ? 'Creating account…' : 'Create account'}
-          </Button>
+        <Button type="submit" disabled={isSubmitting} className="w-full">
+          {isSubmitting ? 'Creating account…' : 'Create account'}
+        </Button>
+
+        <div className="flex items-center gap-3 text-xs uppercase tracking-wider text-slate-600">
+          <div className="h-px flex-1 bg-white/8" />
+          or
+          <div className="h-px flex-1 bg-white/8" />
         </div>
 
-        <div className="pt-4 text-sm text-gray-400 text-center">
-          Already have an account? <NavLink className="text-indigo-300" to="/auth/login">Sign in</NavLink>
+        <Button type="button" variant="outline" className="w-full">
+          <GoogleIcon />
+          Sign up with Google
+        </Button>
+
+        <div className="pt-2 text-center text-sm text-slate-400">
+          Already have an account? <NavLink className="font-medium text-violet-300 hover:text-violet-200" to="/auth/login">Sign in</NavLink>
         </div>
       </form>
     </div>

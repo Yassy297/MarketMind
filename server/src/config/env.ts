@@ -16,6 +16,9 @@ type Env = {
   mongoUri: string;
   frontendOrigin: string;
   finnhubApiKey: string;
+  isProduction: boolean;
+  accessTokenTtlMinutes: number;
+  refreshTokenTtlDays: number;
 };
 
 export const env: Env = {
@@ -24,4 +27,7 @@ export const env: Env = {
   mongoUri: process.env.MONGO_URI ?? process.env.MONGODB_URI ?? '',
   frontendOrigin,
   finnhubApiKey,
+  isProduction,
+  accessTokenTtlMinutes: Number(process.env.ACCESS_TOKEN_TTL_MINUTES ?? 15),
+  refreshTokenTtlDays: Number(process.env.REFRESH_TOKEN_TTL_DAYS ?? 30)
 };

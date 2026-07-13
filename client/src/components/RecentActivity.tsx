@@ -1,5 +1,6 @@
 import React from 'react';
 import DashboardCard from './DashboardCard';
+import { Activity } from 'lucide-react';
 
 type ActivityItem = {
   id: string;
@@ -20,31 +21,34 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ items, loading = false,
     <DashboardCard>
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-white">Recent activity</h3>
-        <span className="text-sm text-gray-500">Latest updates</span>
+        <span className="text-xs uppercase tracking-wider text-slate-500">Latest updates</span>
       </div>
 
       {loading ? (
         <div className="mt-4 space-y-3">
           {Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className="h-14 animate-pulse rounded bg-gray-800" />
+            <div key={index} className="h-14 animate-pulse rounded-lg bg-white/5" />
           ))}
         </div>
       ) : error ? (
-        <div className="mt-4 rounded border border-red-500/30 bg-red-950/20 p-3 text-sm text-red-300">{error}</div>
+        <div className="mt-4 rounded-lg border border-rose-500/20 bg-rose-500/10 p-3 text-sm text-rose-300">{error}</div>
       ) : items.length === 0 ? (
-        <div className="mt-4 rounded border border-dashed border-gray-700 p-3 text-sm text-gray-500">
+        <div className="mt-4 rounded-lg border border-dashed border-white/10 p-4 text-center text-sm text-slate-500">
           No recent activity yet.
         </div>
       ) : (
-        <ul className="mt-4 space-y-3">
+        <ul className="mt-4 space-y-2">
           {items.map((item) => (
-            <li key={item.id} className="rounded-lg border border-gray-800 bg-gray-950/50 p-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
+            <li key={item.id} className="flex items-start gap-3 rounded-xl border border-white/6 bg-white/[0.02] p-3.5">
+              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-500/15 text-indigo-300">
+                <Activity className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-3">
                   <div className="font-medium text-white">{item.title}</div>
-                  <div className="mt-1 text-sm text-gray-400">{item.description}</div>
+                  <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-slate-500">{item.type}</span>
                 </div>
-                <span className="text-xs uppercase tracking-wide text-gray-500">{item.type}</span>
+                <div className="mt-1 text-sm text-slate-400">{item.description}</div>
               </div>
             </li>
           ))}

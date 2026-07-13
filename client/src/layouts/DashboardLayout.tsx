@@ -7,12 +7,14 @@ const DashboardLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="min-h-screen flex bg-gray-900 text-gray-100">
+    <div className="flex h-screen bg-ink-950 text-slate-100">
       <Sidebar collapsed={collapsed} />
-      <div className="flex-1 flex flex-col">
+      <div className="flex min-w-0 flex-1 flex-col">
         <Navbar collapsed={collapsed} onToggle={() => setCollapsed((s) => !s)} />
-        <main className="p-6 flex-1 overflow-auto">
-          <Outlet />
+        <main className="flex-1 overflow-auto p-6">
+          <div className="mx-auto max-w-[1400px]">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>
