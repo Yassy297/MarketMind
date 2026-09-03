@@ -7,9 +7,17 @@ type NewsCardProps = {
   source: string;
   datetime: string;
   url: string;
+  company?: string;
 };
 
-const NewsCard: React.FC<NewsCardProps> = ({ headline, summary, source, datetime, url }) => {
+const NewsCard: React.FC<NewsCardProps> = ({
+  headline,
+  summary,
+  source,
+  datetime,
+  url,
+  company
+}) => {
   return (
     <a
       href={url}
@@ -23,8 +31,11 @@ const NewsCard: React.FC<NewsCardProps> = ({ headline, summary, source, datetime
       <div className="min-w-0">
         <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">{source}</div>
         <div className="mt-1 font-medium text-white group-hover:text-violet-200">{headline}</div>
-        <div className="mt-1.5 line-clamp-2 text-sm text-slate-400">{summary}</div>
-        <div className="mt-2 text-xs text-slate-600">{datetime}</div>
+        {summary ? <div className="mt-1.5 line-clamp-2 text-sm text-slate-400">{summary}</div> : null}
+        <div className="mt-2 flex flex-wrap gap-x-3 text-xs text-slate-600">
+          <span>{datetime}</span>
+          {company ? <span>{company}</span> : null}
+        </div>
       </div>
     </a>
   );

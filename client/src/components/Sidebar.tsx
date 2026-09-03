@@ -1,12 +1,13 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, LineChart, Star, MessageSquare, FileText, Settings, User, LogOut, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, LineChart, BookOpen, Star, MessageSquare, FileText, Settings, User, LogOut, TrendingUp, Menu } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 
 const items = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/stocks', label: 'Stocks', icon: LineChart },
+  { to: '/journal', label: 'Journal', icon: BookOpen },
   { to: '/watchlist', label: 'Watchlist', icon: Star },
   { to: '/chat', label: 'AI Chat', icon: MessageSquare },
   { to: '/documents', label: 'Documents', icon: FileText },
@@ -14,7 +15,10 @@ const items = [
   { to: '/profile', label: 'Profile', icon: User }
 ];
 
-const Sidebar: React.FC<{ collapsed?: boolean }> = ({ collapsed = false }) => {
+const Sidebar: React.FC<{ collapsed?: boolean; onToggle?: () => void }> = ({
+  collapsed = false,
+  onToggle
+}) => {
   const navigate = useNavigate();
   const { logout } = useAuth();
 
@@ -26,11 +30,20 @@ const Sidebar: React.FC<{ collapsed?: boolean }> = ({ collapsed = false }) => {
   return (
     <motion.aside
       initial={false}
-      animate={{ width: collapsed ? 76 : 240 }}
+      animate={{ width: collapsed ? 96 : 240 }}
       className="h-screen shrink-0 flex flex-col justify-between border-r border-white/6 bg-ink-950 px-3 py-5"
     >
       <div>
-        <div className={`mb-8 flex items-center gap-2 px-2 ${collapsed ? 'justify-center' : ''}`}>
+        <div className="mb-8 flex items-center gap-1 px-1">
+          <button
+            type="button"
+            onClick={onToggle}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/5 hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-expanded={!collapsed}
+          >
+            <Menu className="h-[18px] w-[18px]" />
+          </button>
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-gradient shadow-glow">
             <TrendingUp className="h-4 w-4 text-white" strokeWidth={2.5} />
           </div>
@@ -44,7 +57,7 @@ const Sidebar: React.FC<{ collapsed?: boolean }> = ({ collapsed = false }) => {
               <NavLink
                 key={it.to}
                 to={it.to}
-                end
+                end={it.to === '/'}
                 className={({ isActive }) =>
                   `group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
                     isActive

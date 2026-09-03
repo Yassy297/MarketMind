@@ -7,6 +7,13 @@ import Stocks from './pages/Stocks';
 import Documents from './pages/Documents';
 import AIChat from './pages/AIChat';
 import Watchlist from './pages/Watchlist';
+import JournalLayout from './pages/journal/JournalLayout';
+import JournalOverview from './pages/journal/JournalOverview';
+import JournalTrades from './pages/journal/JournalTrades';
+import JournalTradeForm from './pages/journal/JournalTradeForm';
+import JournalTradeDetail from './pages/journal/JournalTradeDetail';
+import JournalCalendar from './pages/journal/JournalCalendar';
+import JournalReports from './pages/journal/JournalReports';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import NotFound from './pages/NotFound';
@@ -41,6 +48,15 @@ export default function AppRoutes() {
       <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
         <Route index element={<Dashboard />} />
         <Route path="stocks" element={<Stocks />} />
+        <Route path="journal" element={<JournalLayout />}>
+          <Route index element={<JournalOverview />} />
+          <Route path="trades" element={<JournalTrades />} />
+          <Route path="trades/new" element={<JournalTradeForm />} />
+          <Route path="trades/:id" element={<JournalTradeDetail />} />
+          <Route path="trades/:id/edit" element={<JournalTradeForm />} />
+          <Route path="calendar" element={<JournalCalendar />} />
+          <Route path="reports" element={<JournalReports />} />
+        </Route>
         <Route path="documents" element={<Documents />} />
         <Route path="chat" element={<AIChat />} />
         <Route path="watchlist" element={<Watchlist />} />

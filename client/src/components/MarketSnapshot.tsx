@@ -1,10 +1,13 @@
 import React from 'react';
 import DashboardCard from './DashboardCard';
 import { Building2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import type { MarketCode } from '../config/markets';
 
 type CompanyItem = {
   symbol: string;
   name: string;
+  market?: MarketCode;
   lastViewedAt: string;
 };
 
@@ -37,15 +40,21 @@ const MarketSnapshot: React.FC<MarketSnapshotProps> = ({ companies, loading = fa
       ) : (
         <ul className="mt-4 space-y-2">
           {companies.map((company) => (
-            <li key={company.symbol} className="flex items-center gap-3 rounded-xl border border-white/6 bg-white/[0.02] px-3 py-2.5 transition hover:border-white/10">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300">
-                <Building2 className="h-4 w-4" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="truncate font-medium text-white">{company.symbol}</div>
-                <div className="truncate text-xs text-slate-500">{company.name}</div>
-              </div>
-              <div className="shrink-0 text-xs text-slate-500">{new Date(company.lastViewedAt).toLocaleDateString()}</div>
+            <li key={company.symbol}>
+              <Link
+                to={`/stocks?symbol=${encodeURIComponent(company.symbol)}&market=${company.market ?? ''}`}
+                aria-label={`View ${company.name || company.symbol} stock details`}
+                className="flex items-center gap-3 rounded-xl border border-white/6 bg-white/[0.02] px-3 py-2.5 transition hover:border-violet-500/40 hover:bg-white/[0.04] focus-visible:border-violet-500/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/30"
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300">
+                  <Building2 className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-medium text-white">{company.symbol}</div>
+                  <div className="truncate text-xs text-slate-500">{company.name}</div>
+                </div>
+                <div className="shrink-0 text-xs text-slate-500">{new Date(company.lastViewedAt).toLocaleDateString()}</div>
+              </Link>
             </li>
           ))}
         </ul>

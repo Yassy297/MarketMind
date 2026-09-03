@@ -1,4 +1,5 @@
 import api from './api';
+import type { CountryCode, CurrencyCode, MarketCode } from '../config/markets';
 
 export type DashboardSummary = {
   documentsCount: number;
@@ -7,6 +8,11 @@ export type DashboardSummary = {
   recentlyViewedCompanies: Array<{
     symbol: string;
     name: string;
+    market?: MarketCode;
+    exchange?: string;
+    countryCode?: CountryCode;
+    currency?: CurrencyCode;
+    isin?: string;
     lastViewedAt: string;
   }>;
   recentActivity: Array<{
@@ -18,7 +24,15 @@ export type DashboardSummary = {
   }>;
 };
 
-export async function fetchDashboardSummary(): Promise<DashboardSummary> {
-  const response = await api.get<DashboardSummary>('/api/dashboard');
+export async function fetchDashboardSummary(context: {
+  market?: MarketCode | null;
+  currency?: CurrencyCode | null;
+} = {}): Promise<DashboardSummary> {
+  const response = await api.get<DashboardSummary>('/api/dashboard', {
+    params: {
+      market: context.market ?? undefined,
+      currency: context.currency ?? undefined
+    }
+  });
   return response.data;
 }

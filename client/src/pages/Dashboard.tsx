@@ -6,13 +6,15 @@ import StatsCard from '../components/StatsCard';
 import RecentActivity from '../components/RecentActivity';
 import MarketSnapshot from '../components/MarketSnapshot';
 import { fetchDashboardSummary } from '../services/dashboard.service';
+import { useMarketContext } from '../context/MarketContext';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const { market, currency } = useMarketContext();
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['dashboard-summary'],
-    queryFn: fetchDashboardSummary,
+    queryKey: ['dashboard-summary', market, currency],
+    queryFn: () => fetchDashboardSummary({ market, currency }),
     retry: false
   });
 

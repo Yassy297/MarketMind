@@ -1,4 +1,5 @@
-import type { Document, Types } from 'mongoose';
+import type { Document } from 'mongoose';
+import type { UserMarketPreferences } from './market';
 
 export interface IUser extends Document {
   name: string;
@@ -7,6 +8,7 @@ export interface IUser extends Document {
   role: 'user' | 'admin';
   watchlist: string[];
   avatar?: string;
+  preferences?: UserMarketPreferences;
   createdAt: Date;
   updatedAt: Date;
 }

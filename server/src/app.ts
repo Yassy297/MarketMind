@@ -5,6 +5,8 @@ import dotenv from 'dotenv';
 import authRoutes from '@/routes/auth.routes';
 import dashboardRoutes from '@/routes/dashboard.routes';
 import stockRoutes from '@/routes/stock.routes';
+import marketContextRoutes from '@/routes/market-context.routes';
+import journalRoutes from '@/routes/journal.routes';
 import { requireAuth } from '@/middleware/auth.middleware';
 import { env } from '@/config/env';
 import { getRecentlyViewed } from '@/controllers/stock.controller';
@@ -46,6 +48,8 @@ app.get('/health', (_req, res) => {
 app.use('/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/stocks', stockRoutes);
+app.use('/api/market/context', marketContextRoutes);
+app.use('/api/journal', journalRoutes);
 app.get('/api/recently-viewed', requireAuth, getRecentlyViewed);
 
 app.use(notFoundHandler);

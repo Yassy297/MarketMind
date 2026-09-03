@@ -1,13 +1,16 @@
 import { BrowserRouter } from 'react-router-dom';
 import AppRoutes from './AppRoutes';
 import { AuthProvider } from './context/AuthContext';
+import { MarketProvider } from './context/MarketContext';
 
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
+      <MarketProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </MarketProvider>
     </AuthProvider>
   );
 }

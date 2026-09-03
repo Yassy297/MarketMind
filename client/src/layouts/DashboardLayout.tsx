@@ -8,9 +8,9 @@ const DashboardLayout: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-ink-950 text-slate-100">
-      <Sidebar collapsed={collapsed} />
+      <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((state) => !state)} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <Navbar collapsed={collapsed} onToggle={() => setCollapsed((s) => !s)} />
+        <Navbar />
         <main className="flex-1 overflow-auto p-6">
           <div className="mx-auto max-w-[1400px]">
             <Outlet />

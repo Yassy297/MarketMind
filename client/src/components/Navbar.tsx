@@ -2,9 +2,18 @@ import React from 'react';
 import { Search, Bell, Settings as SettingsIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useMarketContext } from '../context/MarketContext';
+import {
+  MARKETS,
+  CURRENCIES,
+  SUPPORTED_CURRENCIES,
+  type CountryCode,
+  type CurrencyCode
+} from '../config/markets';
 
-const Navbar: React.FC<{ collapsed?: boolean; onToggle?: () => void }> = ({ onToggle }) => {
+const Navbar: React.FC = () => {
   const { user } = useAuth();
+  const { country, currency, loading, setCountry, setCurrency } = useMarketContext();
   const initials = (user?.name ?? 'U')
     .split(' ')
     .map((part) => part[0])
@@ -13,17 +22,8 @@ const Navbar: React.FC<{ collapsed?: boolean; onToggle?: () => void }> = ({ onTo
     .toUpperCase();
 
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-white/6 bg-ink-950/60 px-6 backdrop-blur">
-      <div className="flex flex-1 items-center gap-3">
-        <button
-          onClick={onToggle}
-          className="rounded-lg p-2 text-slate-400 transition hover:bg-white/5 hover:text-slate-100"
-          aria-label="Toggle sidebar"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M3 6h18M3 12h18M3 18h18" strokeLinecap="round" />
-          </svg>
-        </button>
+    <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-white/6 bg-ink-950/60 px-3 backdrop-blur sm:gap-4 sm:px-6">
+      <div className="hidden min-w-0 flex-1 md:block">
         <div className="relative w-full max-w-sm">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
           <input
@@ -33,11 +33,53 @@ const Navbar: React.FC<{ collapsed?: boolean; onToggle?: () => void }> = ({ onTo
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <button className="rounded-lg p-2 text-slate-400 transition hover:bg-white/5 hover:text-slate-100" aria-label="Notifications">
+      <div className="ml-auto flex min-w-0 items-center gap-2">
+        <label className="sr-only" htmlFor="country-selector">
+          Country
+        </label>
+        <select
+          id="country-selector"
+          value={country ?? ''}
+          disabled={loading}
+          onChange={(event) => {
+            const value = event.target.value as CountryCode | '';
+            void setCountry(value || null);
+          }}
+          className="w-24 rounded-lg border border-white/8 bg-ink-900/80 px-2 py-2 text-sm text-slate-200 outline-none transition hover:border-white/15 focus:border-violet-500/60 focus:ring-2 focus:ring-violet-500/20 disabled:cursor-wait disabled:opacity-60 sm:w-40"
+        >
+          <option value="">Country</option>
+          {Object.values(MARKETS).map((market) => (
+            <option key={market.countryCode} value={market.countryCode}>
+              {market.flag} {market.countryName}
+            </option>
+          ))}
+        </select>
+
+        <label className="sr-only" htmlFor="currency-selector">
+          Display currency
+        </label>
+        <select
+          id="currency-selector"
+          value={currency ?? ''}
+          disabled={loading}
+          onChange={(event) => {
+            const value = event.target.value as CurrencyCode | '';
+            void setCurrency(value || null);
+          }}
+          className="w-20 rounded-lg border border-white/8 bg-ink-900/80 px-2 py-2 text-sm text-slate-200 outline-none transition hover:border-white/15 focus:border-violet-500/60 focus:ring-2 focus:ring-violet-500/20 disabled:cursor-wait disabled:opacity-60 sm:w-24"
+        >
+          <option value="">Currency</option>
+          {SUPPORTED_CURRENCIES.map((currencyCode) => (
+            <option key={currencyCode} value={currencyCode}>
+              {currencyCode} — {CURRENCIES[currencyCode].name}
+            </option>
+          ))}
+        </select>
+
+        <button className="hidden rounded-lg p-2 text-slate-400 transition hover:bg-white/5 hover:text-slate-100 lg:inline-flex" aria-label="Notifications">
           <Bell className="h-[18px] w-[18px]" />
         </button>
-        <Link to="/settings" className="rounded-lg p-2 text-slate-400 transition hover:bg-white/5 hover:text-slate-100" aria-label="Settings">
+        <Link to="/settings" className="hidden rounded-lg p-2 text-slate-400 transition hover:bg-white/5 hover:text-slate-100 lg:inline-flex" aria-label="Settings">
           <SettingsIcon className="h-[18px] w-[18px]" />
         </Link>
         <Link to="/profile" className="ml-1 flex items-center gap-2.5 rounded-lg py-1 pl-1 pr-3 transition hover:bg-white/5">

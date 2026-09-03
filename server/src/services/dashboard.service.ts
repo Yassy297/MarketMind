@@ -4,6 +4,7 @@ import { Document } from '../models/Document';
 import { RecentlyViewed } from '../models/RecentlyViewed';
 import { Watchlist } from '../models/Watchlist';
 import { Types } from 'mongoose';
+import type { CountryCode, CurrencyCode, MarketCode } from '../types/market';
 
 export type DashboardSummary = {
   documentsCount: number;
@@ -12,6 +13,11 @@ export type DashboardSummary = {
   recentlyViewedCompanies: Array<{
     symbol: string;
     name: string;
+    market?: MarketCode;
+    exchange?: string;
+    countryCode?: CountryCode;
+    currency?: CurrencyCode;
+    isin?: string;
     lastViewedAt: string;
   }>;
   recentActivity: Array<{
@@ -38,6 +44,11 @@ class DashboardService {
     const recentlyViewedCompanies = recentCompanies.map((item) => ({
       symbol: item.symbol,
       name: item.company,
+      market: item.market,
+      exchange: item.exchange,
+      countryCode: item.countryCode,
+      currency: item.currency,
+      isin: item.isin,
       lastViewedAt: item.viewedAt.toString()
     }));
 

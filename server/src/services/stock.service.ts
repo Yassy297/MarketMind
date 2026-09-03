@@ -1,176 +1,142 @@
-import axios from 'axios';
 import { Types } from 'mongoose';
-import { env } from '../config/env';
 import { RecentlyViewed } from '../models/RecentlyViewed';
-
-const finnhubBaseUrl = 'https://finnhub.io/api/v1';
-const finnhubClient = axios.create({
-  baseURL: finnhubBaseUrl,
-  params: {
-    token: env.finnhubApiKey
-  }
-});
-
-export type SearchResult = {
-  symbol: string;
-  displaySymbol: string;
-  description: string;
-  type: string;
-};
-
-export type StockProfile = {
-  name: string;
-  ticker: string;
-  exchange: string;
-  industry: string;
-  marketCapitalization: number;
-  currency: string;
-  country: string;
-  ipo: string;
-  logo: string;
-  weburl: string;
-};
-
-export type StockQuote = {
-  currentPrice: number;
-  change: number;
-  percentChange: number;
-  high: number;
-  low: number;
-  open: number;
-  previousClose: number;
-  timestamp: number;
-};
-
-export type StockNewsItem = {
-  id: string;
-  headline: string;
-  summary: string;
-  url: string;
-  datetime: number;
-  source: string;
-};
-
-export type Recommendation = {
-  symbol: string;
-  buy: number;
-  hold: number;
-  sell: number;
-  period: string;
-};
+import type { CountryCode, CurrencyCode, MarketRequestContext } from '../types/market';
+import { isCurrencyCode } from '../config/currencies';
+import { MARKET_CONFIG } from '../config/markets';
+import { marketDataService } from './market-data/marketData.service';
+import { newsService } from './news/news.service';
+import type {
+  AnalystRecommendation,
+  CompetitorsResearch,
+  CompanyProfile,
+  CorporateActionsResearch,
+  FinancialStatementOptions,
+  FinancialStatementsResearch,
+  FundamentalsOverview,
+  NewsItem,
+  NormalizedStockData,
+  PriceData,
+  SearchResult,
+  ShareholdingResearch
+} from './market-data/marketData.types';
 
 class StockService {
-  async searchStocks(query: string): Promise<SearchResult[]> {
-    const { data } = await finnhubClient.get<{ result?: Array<Record<string, unknown>> }>('/search', {
-      params: { q: query }
-    });
-
-    return (data.result ?? []).map((item: Record<string, unknown>) => ({
-      symbol: String(item.symbol ?? ''),
-      displaySymbol: String(item.displaySymbol ?? ''),
-      description: String(item.description ?? ''),
-      type: String(item.type ?? '')
-    }));
+  async searchStocks(query: string, context: MarketRequestContext = {}): Promise<SearchResult[]> {
+    return marketDataService.search(query, context);
   }
 
-  async getStockProfile(symbol: string): Promise<StockProfile> {
-    const { data } = await finnhubClient.get<Record<string, unknown>>('/stock/profile2', {
-      params: { symbol }
-    });
-
-    return {
-      name: String(data.name ?? ''),
-      ticker: String(data.ticker ?? symbol),
-      exchange: String(data.exchange ?? ''),
-      industry: String(data.finnhubIndustry ?? data.industry ?? ''),
-      marketCapitalization: Number(data.marketCapitalization ?? 0),
-      currency: String(data.currency ?? ''),
-      country: String(data.country ?? ''),
-      ipo: String(data.ipo ?? ''),
-      logo: String(data.logo ?? ''),
-      weburl: String(data.weburl ?? '')
-    };
+  async getStockProfile(symbol: string, context: MarketRequestContext = {}): Promise<CompanyProfile> {
+    return marketDataService.getProfile(symbol, context);
   }
 
-  async getStockQuote(symbol: string): Promise<StockQuote> {
-    const { data } = await finnhubClient.get<Record<string, unknown>>('/quote', {
-      params: { symbol }
-    });
-
-    return {
-      currentPrice: Number(data.c ?? 0),
-      change: Number(data.d ?? 0),
-      percentChange: Number(data.dp ?? 0),
-      high: Number(data.h ?? 0),
-      low: Number(data.l ?? 0),
-      open: Number(data.o ?? 0),
-      previousClose: Number(data.pc ?? 0),
-      timestamp: Number(data.t ?? Date.now())
-    };
+  async getStockQuote(symbol: string, context: MarketRequestContext = {}): Promise<PriceData> {
+    return marketDataService.getQuote(symbol, context);
   }
 
-  async getStockNews(symbol: string): Promise<StockNewsItem[]> {
-    const { data } = await finnhubClient.get<Array<Record<string, unknown>>>('/news', {
-      params: { symbol, minId: 0 }
-    });
-
-    return (data ?? []).slice(0, 8).map((item: Record<string, unknown>) => ({
-      id: String(item.id ?? ''),
-      headline: String(item.headline ?? ''),
-      summary: String(item.summary ?? ''),
-      url: String(item.url ?? ''),
-      datetime: Number(item.datetime ?? 0),
-      source: String(item.source ?? '')
-    }));
+  async getStockNews(symbol: string, context: MarketRequestContext = {}): Promise<NewsItem[]> {
+    const profile = await this.getStockProfile(symbol, context).catch(() => undefined);
+    return newsService.getStockNews(symbol, context, profile);
   }
 
-  async getRecommendation(symbol: string): Promise<Recommendation> {
-    const { data } = await finnhubClient.get<Array<Record<string, unknown>>>('/stock/recommendation', {
-      params: { symbol }
-    });
-
-    const first = (data ?? [])[0];
-    return {
-      symbol,
-      buy: Number(first?.buy ?? 0),
-      hold: Number(first?.hold ?? 0),
-      sell: Number(first?.sell ?? 0),
-      period: String(first?.period ?? 'N/A')
-    };
+  async getRecommendation(
+    symbol: string,
+    context: MarketRequestContext = {}
+  ): Promise<AnalystRecommendation> {
+    return marketDataService.getRecommendation(symbol, context);
   }
 
-  async getGeneralMarketNews(limit = 6): Promise<StockNewsItem[]> {
-    const { data } = await finnhubClient.get<Array<Record<string, unknown>>>('/news', {
-      params: { category: 'general' }
-    });
-
-    return (data ?? []).slice(0, limit).map((item: Record<string, unknown>) => ({
-      id: String(item.id ?? ''),
-      headline: String(item.headline ?? ''),
-      summary: String(item.summary ?? ''),
-      url: String(item.url ?? ''),
-      datetime: Number(item.datetime ?? 0),
-      source: String(item.source ?? '')
-    }));
+  async getStock(symbol: string, context: MarketRequestContext = {}): Promise<NormalizedStockData> {
+    return marketDataService.getStock(symbol, context);
   }
 
-  async recordRecentlyViewed(userId: string, symbol: string, company: string): Promise<void> {
+  async getFundamentals(
+    symbol: string,
+    context: MarketRequestContext = {}
+  ): Promise<FundamentalsOverview> {
+    return marketDataService.getFundamentals(symbol, context);
+  }
+
+  async getFinancialStatements(
+    symbol: string,
+    options: FinancialStatementOptions,
+    context: MarketRequestContext = {}
+  ): Promise<FinancialStatementsResearch> {
+    return marketDataService.getFinancialStatements(symbol, options, context);
+  }
+
+  async getShareholding(
+    symbol: string,
+    context: MarketRequestContext = {}
+  ): Promise<ShareholdingResearch> {
+    return marketDataService.getShareholding(symbol, context);
+  }
+
+  async getCorporateActions(
+    symbol: string,
+    context: MarketRequestContext = {}
+  ): Promise<CorporateActionsResearch> {
+    return marketDataService.getCorporateActions(symbol, context);
+  }
+
+  async getCompetitors(
+    symbol: string,
+    context: MarketRequestContext = {}
+  ): Promise<CompetitorsResearch> {
+    return marketDataService.getCompetitors(symbol, context);
+  }
+
+  async getGeneralMarketNews(limit = 6): Promise<NewsItem[]> {
+    return (await newsService.getLatestNews()).slice(0, limit);
+  }
+
+  async recordRecentlyViewed(
+    userId: string,
+    symbol: string,
+    profile: CompanyProfile,
+    context: MarketRequestContext
+  ): Promise<void> {
     const userObjectId = new Types.ObjectId(userId);
 
     await RecentlyViewed.findOneAndUpdate(
       { user: userObjectId, symbol: symbol.toUpperCase() },
-      { $set: { company, viewedAt: new Date() } },
+      {
+        $set: {
+          company: profile.name || symbol,
+          market: context.market,
+          exchange: profile.exchange || undefined,
+          countryCode: context.market ? MARKET_CONFIG[context.market].countryCode : undefined,
+          currency: isCurrencyCode(profile.currency) ? profile.currency : undefined,
+          isin: profile.isin,
+          viewedAt: new Date()
+        }
+      },
       { upsert: true, new: true }
     );
   }
 
-  async getRecentlyViewed(userId: string): Promise<Array<{ symbol: string; company: string; viewedAt: string }>> {
+  async getRecentlyViewed(
+    userId: string
+  ): Promise<Array<{
+    symbol: string;
+    company: string;
+    market?: MarketRequestContext['market'];
+    exchange?: string;
+    countryCode?: CountryCode;
+    currency?: CurrencyCode;
+    isin?: string;
+    viewedAt: string;
+  }>> {
     const userObjectId = new Types.ObjectId(userId);
     const history = await RecentlyViewed.find({ user: userObjectId }).sort({ viewedAt: -1 }).limit(5).lean();
 
     return history.map((item) => ({
       symbol: item.symbol,
       company: item.company,
+      market: item.market,
+      exchange: item.exchange,
+      countryCode: item.countryCode,
+      currency: item.currency,
+      isin: item.isin,
       viewedAt: item.viewedAt.toString()
     }));
   }

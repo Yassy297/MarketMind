@@ -29,6 +29,17 @@ body {
   background: rgba(124, 58, 237, 0.35);
 }
 
+input[type='date'],
+input[type='time'] {
+  color-scheme: dark;
+}
+
+input[type='date']::-webkit-calendar-picker-indicator,
+input[type='time']::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0;
+}
+
 /* thin, unobtrusive scrollbars to match the dense dashboard feel */
 ::-webkit-scrollbar {
   width: 8px;

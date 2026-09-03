@@ -30,6 +30,8 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
 };
 
 declare global {
+  // Express request augmentation requires declaration merging.
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       user?: {

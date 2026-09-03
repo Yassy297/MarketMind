@@ -1,4 +1,7 @@
 import mongoose, { Schema, type Document as MongooseDocument } from 'mongoose';
+import type { UserMarketPreferences } from '../types/market';
+import { MARKET_CONFIG } from '../config/markets';
+import { CURRENCY_CONFIG } from '../config/currencies';
 
 export interface IUser extends MongooseDocument {
   name: string;
@@ -7,6 +10,7 @@ export interface IUser extends MongooseDocument {
   role: 'user' | 'admin';
   watchlist: string[];
   avatar?: string;
+  preferences?: UserMarketPreferences;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -42,6 +46,18 @@ const userSchema = new Schema<IUser>(
       type: String,
       default: undefined,
       trim: true
+    },
+    preferences: {
+      type: new Schema(
+        {
+          country: { type: String, enum: [...Object.keys(MARKET_CONFIG), null], default: null },
+          market: { type: String, enum: [...Object.keys(MARKET_CONFIG), null], default: null },
+          currency: { type: String, enum: [...Object.keys(CURRENCY_CONFIG), null], default: null },
+          currencyCustomized: { type: Boolean, default: undefined }
+        },
+        { _id: false }
+      ),
+      default: undefined
     }
   },
   {
