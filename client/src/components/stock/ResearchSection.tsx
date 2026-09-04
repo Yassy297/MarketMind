@@ -20,27 +20,27 @@ const ResearchSection = ({
   availability,
   children
 }: ResearchSectionProps) => (
-  <section className="rounded-2xl border border-white/6 bg-ink-900/80 p-5 shadow-card">
+  <section className="mm-card">
     <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-      <div>
-        <h3 className="font-semibold text-white">{title}</h3>
-        {subtitle ? <p className="mt-1 text-sm text-slate-500">{subtitle}</p> : null}
+      <div className="space-y-1">
+        <h3 className="text-section-title text-fg">{title}</h3>
+        {subtitle ? <p className="text-sm text-fg-muted">{subtitle}</p> : null}
       </div>
       {action}
     </div>
 
     {loading ? (
       <div className="space-y-3" aria-label={`Loading ${title}`}>
-        <div className="h-10 animate-pulse rounded-lg bg-white/5" />
-        <div className="h-10 animate-pulse rounded-lg bg-white/5" />
-        <div className="h-10 w-2/3 animate-pulse rounded-lg bg-white/5" />
+        <div className="h-10 animate-pulse rounded-lg bg-surface-hover" />
+        <div className="h-10 animate-pulse rounded-lg bg-surface-hover" />
+        <div className="h-10 w-2/3 animate-pulse rounded-lg bg-surface-hover" />
       </div>
     ) : error ? (
-      <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-200">
+      <div className="mm-alert-warning" role="alert">
         {error}
       </div>
     ) : availability && availability.status !== 'available' ? (
-      <div className="rounded-lg border border-dashed border-white/10 p-4 text-sm text-slate-500">
+      <div className="rounded-lg border border-dashed border-line p-4 text-sm text-fg-muted">
         {availability.message ?? 'Not available for this instrument.'}
       </div>
     ) : (

@@ -33,8 +33,7 @@ import type { CurrencyCode, MarketCode } from '../../config/markets';
 import type { JournalAssetClass, JournalAssetDetails, JournalTradeInput } from '../../types/journal';
 import { previewHoldingDuration } from '../../utils/holding-duration';
 
-const fieldClass =
-  'w-full rounded-lg border border-white/8 bg-ink-900/80 px-3.5 py-2.5 text-sm text-slate-100 outline-none focus:border-violet-500/60 focus:ring-2 focus:ring-violet-500/20';
+const fieldClass = 'mm-field';
 
 const emptyForm = (currency: CurrencyCode, market: MarketCode | null): JournalTradeInput => ({
   symbol: '',
@@ -71,9 +70,9 @@ const Field = ({
   help?: string;
   children: ReactNode;
 }) => (
-  <div className="block text-sm text-slate-400">
+  <div className="block text-sm text-fg-secondary">
     <div className="mb-1 flex items-center gap-1.5">
-      <label htmlFor={id} className="text-sm text-slate-400">{label}</label>
+      <label htmlFor={id} className="text-sm text-fg-secondary">{label}</label>
       {help ? <InfoTooltip label={label}>{help}</InfoTooltip> : null}
     </div>
     {children}
@@ -254,15 +253,15 @@ const JournalTradeForm = () => {
   if (isEdit && existingQuery.isLoading) {
     return (
       <div className="space-y-4">
-        <div className="h-16 animate-pulse rounded-2xl bg-white/5" />
-        <div className="h-64 animate-pulse rounded-2xl bg-white/5" />
+        <div className="h-16 animate-pulse rounded-2xl bg-surface-hover" />
+        <div className="h-64 animate-pulse rounded-2xl bg-surface-hover" />
       </div>
     );
   }
 
   if (isEdit && existingQuery.isError) {
     return (
-      <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-200" role="alert">
+      <div className="rounded-xl border border-warning/25 bg-warning/10 p-4 text-sm text-warning" role="alert">
         {getJournalErrorMessage(existingQuery.error, 'Unable to load this trade.')}
       </div>
     );
@@ -276,13 +275,13 @@ const JournalTradeForm = () => {
       />
 
       {error ? (
-        <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-200" role="alert">
+        <div className="rounded-xl border border-warning/25 bg-warning/10 p-4 text-sm text-warning" role="alert">
           {error}
         </div>
       ) : null}
 
-      <section className="grid gap-4 rounded-2xl border border-white/6 bg-ink-900/80 p-5 md:grid-cols-2">
-        <h3 className="font-semibold text-white md:col-span-2">Trade</h3>
+      <section className="mm-card grid gap-4 md:grid-cols-2">
+        <h3 className="text-section-title text-fg md:col-span-2">Trade details</h3>
         <Field id={ids.assetClass} label="Asset class" help={FIELD_HELP.assetClass}>
           <select id={ids.assetClass} className={fieldClass} value={form.assetClass} onChange={(event) => setField('assetClass', event.target.value as JournalAssetClass)}>
             {ASSET_CLASS_OPTIONS.map((option) => (
@@ -470,8 +469,8 @@ const JournalTradeForm = () => {
         ) : null}
       </section>
 
-      <section className="grid gap-4 rounded-2xl border border-white/6 bg-ink-900/80 p-5 md:grid-cols-2">
-        <h3 className="font-semibold text-white md:col-span-2">Risk</h3>
+      <section className="mm-card grid gap-4 md:grid-cols-2">
+        <h3 className="text-section-title text-fg md:col-span-2">Risk</h3>
         <Field id={ids.stopLoss} label="Stop loss" help={FIELD_HELP.stopLoss}>
           <Input id={ids.stopLoss} type="number" step="any" value={form.stopLoss ?? ''} onChange={(event) => setField('stopLoss', numberOrUndefined(event.target.value) ?? null)} />
         </Field>
@@ -480,8 +479,8 @@ const JournalTradeForm = () => {
         </Field>
       </section>
 
-      <section className="grid gap-4 rounded-2xl border border-white/6 bg-ink-900/80 p-5 md:grid-cols-2">
-        <h3 className="font-semibold text-white md:col-span-2">Journal</h3>
+      <section className="mm-card grid gap-4 md:grid-cols-2">
+        <h3 className="text-section-title text-fg md:col-span-2">Journal</h3>
         <Field id={ids.entryReason} label="Why did I enter?" help={FIELD_HELP.entryReason}>
           <textarea id={ids.entryReason} className={fieldClass} rows={3} value={form.entryReason ?? ''} onChange={(event) => setField('entryReason', event.target.value)} />
         </Field>
@@ -529,8 +528,8 @@ const JournalTradeForm = () => {
         </Field>
       </section>
 
-      <section className="grid gap-4 rounded-2xl border border-white/6 bg-ink-900/80 p-5 md:grid-cols-2">
-        <h3 className="font-semibold text-white md:col-span-2">Psychology</h3>
+      <section className="mm-card grid gap-4 md:grid-cols-2">
+        <h3 className="text-section-title text-fg md:col-span-2">Psychology</h3>
         <Field id={ids.confidence} label="Confidence" help={FIELD_HELP.confidence}>
           <Input id={ids.confidence} type="number" min={1} max={10} value={form.confidence ?? ''} onChange={(event) => setField('confidence', numberOrUndefined(event.target.value) ?? null)} />
         </Field>
@@ -559,13 +558,13 @@ const JournalTradeForm = () => {
             {EMOTION_OPTIONS.map((emotion) => <option key={emotion} value={emotion}>{emotion}</option>)}
           </select>
         </Field>
-        <div className="flex items-center gap-2 text-sm text-slate-300">
+        <div className="flex items-center gap-2 text-sm text-fg-secondary">
           <input id={ids.followedPlan} type="checkbox" checked={form.followedPlan === true} onChange={(event) => setField('followedPlan', event.target.checked)} />
           <label htmlFor={ids.followedPlan}>I followed my plan</label>
           <InfoTooltip label="Followed my plan">{FIELD_HELP.followedPlan}</InfoTooltip>
         </div>
         <div className="md:col-span-2">
-          <div className="mb-2 flex items-center gap-1.5 text-sm text-slate-400">
+          <div className="mb-2 flex items-center gap-1.5 text-sm text-fg-secondary">
             <span>Mistakes</span>
             <InfoTooltip label="Mistakes">{FIELD_HELP.mistakes}</InfoTooltip>
           </div>
@@ -583,7 +582,7 @@ const JournalTradeForm = () => {
                       selected ? form.mistakeTags?.filter((item) => item !== tag) : [...(form.mistakeTags ?? []), tag]
                     )
                   }
-                  className={`rounded-full px-3 py-1 text-xs ${selected ? 'bg-violet-500/20 text-violet-200' : 'bg-white/5 text-slate-400'}`}
+                  className={`rounded-full px-3 py-1 text-xs ${selected ? 'bg-violet-500/20 text-brand' : 'bg-surface-hover text-fg-secondary'}`}
                 >
                   {tag}
                 </button>
@@ -593,8 +592,8 @@ const JournalTradeForm = () => {
         </div>
       </section>
 
-      <section className="grid gap-4 rounded-2xl border border-white/6 bg-ink-900/80 p-5 md:grid-cols-2">
-        <h3 className="font-semibold text-white md:col-span-2">Review</h3>
+      <section className="mm-card grid gap-4 md:grid-cols-2">
+        <h3 className="text-section-title text-fg md:col-span-2">Review</h3>
         <Field id={ids.whatWentRight} label="What went right?" help={FIELD_HELP.whatWentRight}>
           <textarea id={ids.whatWentRight} className={fieldClass} rows={2} value={form.whatWentRight ?? ''} onChange={(event) => setField('whatWentRight', event.target.value)} />
         </Field>
@@ -630,7 +629,7 @@ const JournalTradeForm = () => {
               <button
                 key={tag}
                 type="button"
-                className="rounded-full bg-white/5 px-3 py-1 text-xs text-slate-300"
+                className="rounded-full bg-surface-hover px-3 py-1 text-xs text-fg-secondary"
                 onClick={() => setField('tags', form.tags?.filter((item) => item !== tag))}
               >
                 {tag} ×

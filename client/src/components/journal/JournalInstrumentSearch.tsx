@@ -101,16 +101,16 @@ const JournalInstrumentSearch = ({
         <div
           id={listId}
           role="listbox"
-          className="absolute z-20 mt-1 max-h-72 w-full overflow-auto rounded-xl border border-white/8 bg-ink-950 shadow-card"
+          className="absolute z-20 mt-1 max-h-72 w-full overflow-auto rounded-xl border border-line bg-background shadow-card"
         >
           {searchQuery.isFetching ? (
-            <div className="px-3 py-3 text-sm text-slate-400">Searching…</div>
+            <div className="px-3 py-3 text-sm text-fg-secondary">Searching…</div>
           ) : searchQuery.isError ? (
-            <div className="px-3 py-3 text-sm text-amber-200">
+            <div className="px-3 py-3 text-sm text-warning">
               {getStockErrorMessage(searchQuery.error, 'Live search is unavailable. You can still type a custom name.')}
             </div>
           ) : results.length === 0 ? (
-            <div className="px-3 py-3 text-sm text-slate-400">
+            <div className="px-3 py-3 text-sm text-fg-secondary">
               {allowCustom ? 'No market match. The typed name will be saved as a custom instrument.' : 'No matches.'}
             </div>
           ) : (
@@ -122,13 +122,13 @@ const JournalInstrumentSearch = ({
                 role="option"
                 aria-selected={highlighted === index}
                 className={`flex w-full items-center justify-between px-3 py-2.5 text-left text-sm ${
-                  highlighted === index ? 'bg-violet-500/15' : 'hover:bg-white/5'
+                  highlighted === index ? 'bg-brand-subtle' : 'hover:bg-surface-hover'
                 }`}
                 onMouseEnter={() => setHighlighted(index)}
                 onClick={() => selectResult(result)}
               >
-                <span className="text-white">{result.companyName}</span>
-                <span className="text-xs text-slate-500">
+                <span className="text-fg">{result.companyName}</span>
+                <span className="text-xs text-fg-muted">
                   {result.displaySymbol}
                   {result.exchange ? ` · ${result.exchange}` : ''}
                 </span>

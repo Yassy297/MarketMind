@@ -37,22 +37,22 @@ const RatioGrid = ({
     (metric) => typeof metric.value === 'number' || typeof metric.benchmark === 'number'
   );
   if (!visible.length) {
-    return <p className="text-sm text-slate-500">Not available</p>;
+    return <p className="text-sm text-fg-muted">Not available</p>;
   }
   return (
     <div className="grid gap-3 sm:grid-cols-3">
       {visible.map((metric) => {
         const relative = sectorRelative(metric.value, metric.benchmark);
         return (
-          <div key={metric.label} className="rounded-xl border border-white/6 bg-white/[0.02] p-4">
-            <div className="text-xs uppercase tracking-wider text-slate-500">{metric.label}</div>
-            <div className="mt-2 text-xl font-semibold text-white">
+          <div key={metric.label} className="rounded-xl border border-line bg-surface-hover p-4">
+            <div className="text-xs uppercase tracking-wider text-fg-muted">{metric.label}</div>
+            <div className="mt-2 text-xl font-semibold text-fg">
               {ratioText(metric.value, metric.percentage)}
             </div>
-            <div className="mt-1 text-xs text-slate-500">
+            <div className="mt-1 text-xs text-fg-muted">
               Sector: {ratioText(metric.benchmark, metric.percentage)}
             </div>
-            {relative ? <div className="mt-2 text-xs text-slate-400">{relative}</div> : null}
+            {relative ? <div className="mt-2 text-xs text-fg-secondary">{relative}</div> : null}
           </div>
         );
       })}
@@ -69,10 +69,10 @@ const MetricChip = ({
   value: string;
   note?: string;
 }) => (
-  <div className="rounded-xl border border-white/6 bg-white/[0.02] p-3">
-    <div className="text-xs uppercase tracking-wider text-slate-500">{label}</div>
-    <div className="mt-1 text-lg font-semibold text-white">{value}</div>
-    {note ? <div className="mt-1 text-[11px] text-slate-500">{note}</div> : null}
+  <div className="rounded-xl border border-line bg-surface-hover p-3">
+    <div className="text-xs uppercase tracking-wider text-fg-muted">{label}</div>
+    <div className="mt-1 text-lg font-semibold text-fg">{value}</div>
+    {note ? <div className="mt-1 text-[11px] text-fg-muted">{note}</div> : null}
   </div>
 );
 
@@ -270,25 +270,25 @@ const FundamentalsOverview = ({
         error={error}
         availability={data?.company.availability}
       >
-        <p className="text-sm leading-6 text-slate-300">
+        <p className="text-sm leading-6 text-fg-secondary">
           {data?.company.businessDescription || 'No company description is available.'}
         </p>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-lg border border-white/6 bg-white/[0.02] p-3">
-            <div className="text-xs text-slate-500">ISIN</div>
-            <div className="mt-1 text-sm font-medium text-white">
+          <div className="rounded-lg border border-line bg-surface-hover p-3">
+            <div className="text-xs text-fg-muted">ISIN</div>
+            <div className="mt-1 text-sm font-medium text-fg">
               {data?.company.identity.isin || 'Not available'}
             </div>
           </div>
-          <div className="rounded-lg border border-white/6 bg-white/[0.02] p-3">
-            <div className="text-xs text-slate-500">Exchange</div>
-            <div className="mt-1 text-sm font-medium text-white">
+          <div className="rounded-lg border border-line bg-surface-hover p-3">
+            <div className="text-xs text-fg-muted">Exchange</div>
+            <div className="mt-1 text-sm font-medium text-fg">
               {data?.company.identity.exchange || 'Not available'}
             </div>
           </div>
-          <div className="rounded-lg border border-white/6 bg-white/[0.02] p-3">
-            <div className="text-xs text-slate-500">Sector market cap</div>
-            <div className="mt-1 text-sm font-medium text-white">
+          <div className="rounded-lg border border-line bg-surface-hover p-3">
+            <div className="text-xs text-fg-muted">Sector market cap</div>
+            <div className="mt-1 text-sm font-medium text-fg">
               {formatConvertedMonetaryValue(data?.company.sectorMarketCapitalization, ' Cr')}
             </div>
           </div>

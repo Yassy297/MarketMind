@@ -19,30 +19,30 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({ buy, hold, sell
   const max = Math.max(buy, hold, sell, 1);
 
   return (
-    <div className="rounded-xl border border-white/6 bg-white/[0.02] p-4">
-      <div className="text-sm font-medium text-slate-300">Analyst recommendation</div>
+    <div className="rounded-xl border border-line bg-surface-hover p-4">
+      <div className="text-sm font-medium text-fg-secondary">Analyst recommendation</div>
       {loading ? (
         <div className="mt-3 space-y-2">
-          <div className="h-4 animate-pulse rounded bg-white/5" />
-          <div className="h-4 animate-pulse rounded bg-white/5" />
-          <div className="h-4 animate-pulse rounded bg-white/5" />
+          <div className="h-4 animate-pulse rounded bg-surface-hover" />
+          <div className="h-4 animate-pulse rounded bg-surface-hover" />
+          <div className="h-4 animate-pulse rounded bg-surface-hover" />
         </div>
       ) : (
         <>
           <div className="mt-4 space-y-3">
             {rows.map((row) => (
               <div key={row.key}>
-                <div className="mb-1 flex justify-between text-sm text-slate-300">
+                <div className="mb-1 flex justify-between text-sm text-fg-secondary">
                   <span>{row.label}</span>
-                  <span className="font-medium text-white">{values[row.key]}</span>
+                  <span className="font-medium text-fg">{values[row.key]}</span>
                 </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5">
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-hover">
                   <div className={`h-full rounded-full ${row.barClass}`} style={{ width: `${(values[row.key] / max) * 100}%` }} />
                 </div>
               </div>
             ))}
           </div>
-          <div className="mt-4 text-xs uppercase tracking-wider text-slate-500">Period: {period}</div>
+          <div className="mt-4 text-xs uppercase tracking-wider text-fg-muted">Period: {period}</div>
         </>
       )}
     </div>

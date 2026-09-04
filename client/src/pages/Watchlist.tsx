@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Star, MoreHorizontal } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
-import Button from '../components/ui/button';
+import EmptyState from '../components/ui/EmptyState';
 
 type WatchlistItem = {
   symbol: string;
@@ -25,63 +25,67 @@ const Watchlist: React.FC = () => {
   }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="mm-page">
       <PageHeader
-        title="My Watchlist"
-        subtitle="Track your favorite stocks in one place."
-        action={
-          <Button size="sm">
-            <Star className="h-4 w-4" />
-            Add Stock
-          </Button>
-        }
+        title="Watchlist"
+        subtitle="A foundation for tracking companies. Multiple watchlists will arrive in a later update."
       />
 
-      <div className="overflow-hidden rounded-2xl border border-white/6 bg-ink-900/80 shadow-card">
+      <div className="overflow-hidden rounded-xl border border-line bg-surface">
         {loading ? (
           <div className="space-y-3 p-5">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-12 animate-pulse rounded-lg bg-white/5" />
+              <div key={i} className="h-12 animate-pulse rounded-lg bg-surface-hover" />
             ))}
           </div>
         ) : data.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 p-12 text-center">
-            <Star className="h-8 w-8 text-slate-600" />
-            <div className="text-sm font-medium text-slate-300">Your watchlist is empty</div>
-            <p className="max-w-xs text-sm text-slate-500">Add companies from the Stocks page to start tracking them here.</p>
-          </div>
+          <EmptyState
+            icon={Star}
+            title="No watchlists yet"
+            description="You don’t have any saved lists. Multi-watchlist tracking will be added in a later phase. Stock research remains available on the Stocks page."
+          />
         ) : (
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-white/6 text-xs uppercase tracking-wider text-slate-500">
-                <th className="px-5 py-3 font-medium">Name</th>
-                <th className="px-5 py-3 font-medium">Price</th>
-                <th className="px-5 py-3 font-medium">Change</th>
-                <th className="px-5 py-3 font-medium">Market Cap</th>
-                <th className="px-5 py-3 font-medium text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((item) => (
-                <tr key={item.symbol} className="border-b border-white/4 last:border-0 hover:bg-white/[0.02]">
-                  <td className="px-5 py-3.5">
-                    <div className="font-medium text-white">{item.symbol}</div>
-                    {item.name && <div className="text-xs text-slate-500">{item.name}</div>}
-                  </td>
-                  <td className="px-5 py-3.5 text-slate-300">{item.price ? `$${item.price.toFixed(2)}` : '-'}</td>
-                  <td className={`px-5 py-3.5 ${(item.percentChange ?? 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {item.percentChange !== undefined ? `${item.percentChange.toFixed(2)}%` : '-'}
-                  </td>
-                  <td className="px-5 py-3.5 text-slate-300">{item.marketCap ?? '-'}</td>
-                  <td className="px-5 py-3.5 text-right">
-                    <button className="rounded-lg p-1.5 text-slate-500 hover:bg-white/5 hover:text-slate-200">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </button>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="mm-table min-w-[720px]">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Price</th>
+                  <th>Change</th>
+                  <th>Market cap</th>
+                  <th className="text-right">Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {data.map((item) => {
+                  const change = item.percentChange;
+                  const up = (change ?? 0) > 0;
+                  const down = (change ?? 0) < 0;
+                  return (
+                    <tr key={item.symbol}>
+                      <td>
+                        <div className="font-medium text-fg">{item.symbol}</div>
+                        {item.name ? <div className="text-xs text-fg-muted">{item.name}</div> : null}
+                      </td>
+                      <td>{item.price ? `$${item.price.toFixed(2)}` : '—'}</td>
+                      <td className={up ? 'text-positive' : down ? 'text-negative' : undefined}>
+                        {change === undefined ? '—' : `${up ? '+' : ''}${change.toFixed(2)}%`}
+                        {change !== undefined ? (
+                          <span className="sr-only">{up ? ' up' : down ? ' down' : ' unchanged'}</span>
+                        ) : null}
+                      </td>
+                      <td>{item.marketCap ?? '—'}</td>
+                      <td className="text-right">
+                        <button type="button" className="rounded-lg p-1.5 text-fg-muted hover:bg-surface-hover hover:text-fg" aria-label={`More actions for ${item.symbol}`}>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

@@ -27,18 +27,18 @@ const Shareholding = ({ data, loading, error }: ShareholdingProps) => {
           const change =
             current && previous ? current.value - previous.value : null;
           return (
-            <div key={category.key} className="rounded-xl border border-white/6 bg-white/[0.02] p-3">
-              <div className="text-xs uppercase tracking-wider text-slate-500">{category.label}</div>
-              <div className="mt-1 text-lg font-semibold text-white">
+            <div key={category.key} className="rounded-xl border border-line bg-surface-hover p-3">
+              <div className="text-xs uppercase tracking-wider text-fg-muted">{category.label}</div>
+              <div className="mt-1 text-lg font-semibold text-fg">
                 {current ? `${current.value.toFixed(2)}%` : 'Not available'}
               </div>
-              <div className="mt-1 text-xs text-slate-500">
+              <div className="mt-1 text-xs text-fg-muted">
                 {current?.period}
                 {change !== null
                   ? ` · ${change >= 0 ? '+' : ''}${change.toFixed(2)} pp`
                   : ''}
               </div>
-              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/5">
+              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-hover">
                 <div
                   className="h-full rounded-full bg-violet-500"
                   style={{ width: `${Math.max(0, Math.min(100, current?.value ?? 0))}%` }}
@@ -52,7 +52,7 @@ const Shareholding = ({ data, loading, error }: ShareholdingProps) => {
       {periods.length ? (
         <div className="mt-5 overflow-x-auto">
           <table className="w-full min-w-[640px] text-left text-sm">
-            <thead className="border-b border-white/8 text-xs uppercase tracking-wider text-slate-500">
+            <thead className="border-b border-line text-xs uppercase tracking-wider text-fg-muted">
               <tr>
                 <th className="pb-3 font-medium">Holder category</th>
                 {periods.map((period) => (
@@ -63,9 +63,9 @@ const Shareholding = ({ data, loading, error }: ShareholdingProps) => {
             <tbody className="divide-y divide-white/6">
               {(data?.categories ?? []).map((category) => (
                 <tr key={category.key}>
-                  <td className="py-3 font-medium text-slate-300">{category.label}</td>
+                  <td className="py-3 font-medium text-fg-secondary">{category.label}</td>
                   {periods.map((period) => (
-                    <td key={period} className="py-3 text-white">
+                    <td key={period} className="py-3 text-fg">
                       {category.history.find((point) => point.period === period)?.value.toFixed(2) ?? '—'}%
                     </td>
                   ))}

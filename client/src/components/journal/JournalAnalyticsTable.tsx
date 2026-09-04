@@ -72,17 +72,17 @@ const JournalAnalyticsTable = ({
   };
 
   if (rows.length === 0) {
-    return <div className="p-10 text-center text-sm text-slate-500">{emptyLabel}</div>;
+    return <div className="p-10 text-center text-sm text-fg-muted">{emptyLabel}</div>;
   }
 
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[720px] text-left text-sm">
-        <thead className="border-b border-white/6 text-xs uppercase tracking-wider text-slate-500">
+        <thead className="border-b border-line text-xs uppercase tracking-wider text-fg-muted">
           <tr>
             {columns.map((column) => (
               <th key={column.key} className={`px-4 py-3 font-medium ${column.numeric ? 'text-right' : ''}`}>
-                <button type="button" className="hover:text-slate-200" onClick={() => toggle(column.key)}>
+                <button type="button" className="hover:text-fg" onClick={() => toggle(column.key)}>
                   {column.key === 'key' && nameLabel ? nameLabel : column.label}
                   {sortKey === column.key ? (direction === 'asc' ? ' ↑' : ' ↓') : ''}
                 </button>
@@ -92,12 +92,12 @@ const JournalAnalyticsTable = ({
         </thead>
         <tbody>
           {visible.map((row) => (
-            <tr key={row.key} className="border-b border-white/5 last:border-0">
+            <tr key={row.key} className="border-b border-line-subtle last:border-0">
               {columns.map((column) => (
                 <td
                   key={column.key}
-                  className={`px-4 py-3 ${column.numeric ? 'text-right tabular-nums' : 'text-white'} ${
-                    column.key === 'key' ? 'font-medium' : 'text-slate-300'
+                  className={`px-4 py-3 ${column.numeric ? 'text-right tabular-nums' : 'text-fg'} ${
+                    column.key === 'key' ? 'font-medium' : 'text-fg-secondary'
                   }`}
                 >
                   {cell(row, column.key)}

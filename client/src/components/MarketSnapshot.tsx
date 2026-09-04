@@ -21,21 +21,22 @@ const MarketSnapshot: React.FC<MarketSnapshotProps> = ({ companies, loading = fa
   return (
     <DashboardCard>
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-white">Recently viewed</h3>
-        <span className="text-xs uppercase tracking-wider text-slate-500">Your focus list</span>
+        <h3 className="text-card-title text-fg">Recently viewed</h3>
+        <span className="text-xs uppercase tracking-wider text-fg-muted">Your focus list</span>
       </div>
 
       {loading ? (
         <div className="mt-4 space-y-3">
           {Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className="h-12 animate-pulse rounded-lg bg-white/5" />
+            <div key={index} className="h-12 animate-pulse rounded-lg bg-surface-hover" />
           ))}
         </div>
       ) : error ? (
-        <div className="mt-4 rounded-lg border border-rose-500/20 bg-rose-500/10 p-3 text-sm text-rose-300">{error}</div>
+        <div className="mt-4 rounded-lg border border-negative/25 bg-negative/10 p-3 text-sm text-negative">{error}</div>
       ) : companies.length === 0 ? (
-        <div className="mt-4 rounded-lg border border-dashed border-white/10 p-4 text-center text-sm text-slate-500">
-          No recently viewed companies yet.
+        <div className="mt-4 rounded-lg border border-dashed border-line p-6 text-center">
+          <p className="text-sm font-medium text-fg">No recently viewed stocks</p>
+          <p className="mt-1 text-sm text-fg-muted">Open a company on the Stocks page to start this list.</p>
         </div>
       ) : (
         <ul className="mt-4 space-y-2">
@@ -44,16 +45,16 @@ const MarketSnapshot: React.FC<MarketSnapshotProps> = ({ companies, loading = fa
               <Link
                 to={`/stocks?symbol=${encodeURIComponent(company.symbol)}&market=${company.market ?? ''}`}
                 aria-label={`View ${company.name || company.symbol} stock details`}
-                className="flex items-center gap-3 rounded-xl border border-white/6 bg-white/[0.02] px-3 py-2.5 transition hover:border-violet-500/40 hover:bg-white/[0.04] focus-visible:border-violet-500/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/30"
+                className="flex items-center gap-3 rounded-xl border border-line bg-background-secondary px-3 py-2.5 transition hover:border-brand/40 hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40"
               >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-subtle text-brand">
                   <Building2 className="h-4 w-4" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate font-medium text-white">{company.symbol}</div>
-                  <div className="truncate text-xs text-slate-500">{company.name}</div>
+                  <div className="truncate font-medium text-fg">{company.symbol}</div>
+                  <div className="truncate text-xs text-fg-muted">{company.name}</div>
                 </div>
-                <div className="shrink-0 text-xs text-slate-500">{new Date(company.lastViewedAt).toLocaleDateString()}</div>
+                <div className="shrink-0 text-xs text-fg-muted">{new Date(company.lastViewedAt).toLocaleDateString()}</div>
               </Link>
             </li>
           ))}

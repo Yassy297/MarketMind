@@ -15,10 +15,10 @@ const ChartFrame = ({
   empty: boolean;
   children: ReactNode;
 }) => (
-  <section className="rounded-2xl border border-white/6 bg-ink-900/80 p-5 shadow-card">
-    <h3 className="mb-4 text-sm font-medium text-slate-300">{title}</h3>
+  <section className="rounded-2xl border border-line bg-surface p-5 shadow-card">
+    <h3 className="mb-4 text-sm font-medium text-fg-secondary">{title}</h3>
     {empty ? (
-      <p className="py-10 text-center text-sm text-slate-500">Closed trades with P&L will appear here.</p>
+      <p className="py-10 text-center text-sm text-fg-muted">Closed trades with P&L will appear here.</p>
     ) : (
       children
     )}
@@ -47,7 +47,7 @@ export const JournalLineChart = ({ title, points }: { title: string; points: Cha
 
   return (
     <ChartFrame title={title} empty={points.length === 0}>
-      <svg viewBox={`0 0 ${width} ${height}`} className="h-56 w-full text-violet-300" role="img" aria-label={title}>
+      <svg viewBox={`0 0 ${width} ${height}`} className="h-56 w-full text-brand" role="img" aria-label={title}>
         <line x1={pad} y1={zeroY} x2={width - pad} y2={zeroY} stroke="currentColor" strokeOpacity="0.15" />
         <path d={line} fill="none" stroke="currentColor" strokeWidth="2" />
         {coords.map((point) => (
@@ -101,7 +101,7 @@ export const JournalBarChart = ({ title, points }: { title: string; points: Char
         })}
       </svg>
       {points.length > 0 ? (
-        <div className="mt-2 flex justify-between text-xs text-slate-500">
+        <div className="mt-2 flex justify-between text-xs text-fg-muted">
           <span className={metricTone(points[0]?.value)}>{points[0]?.label}</span>
           <span className={metricTone(points[points.length - 1]?.value)}>{points[points.length - 1]?.label}</span>
         </div>

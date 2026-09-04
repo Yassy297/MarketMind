@@ -1,4 +1,5 @@
 import type { Document } from 'mongoose';
+import type { AppearancePreference } from './auth';
 import type { UserMarketPreferences } from './market';
 
 export interface IUser extends Document {
@@ -8,6 +9,7 @@ export interface IUser extends Document {
   role: 'user' | 'admin';
   watchlist: string[];
   avatar?: string;
+  appearance?: AppearancePreference;
   preferences?: UserMarketPreferences;
   createdAt: Date;
   updatedAt: Date;

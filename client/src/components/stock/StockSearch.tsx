@@ -56,15 +56,15 @@ const StockSearch: React.FC<StockSearchProps> = ({
   let dropdownContent: React.ReactNode;
   if (loading) {
     dropdownContent = (
-      <div className="flex items-center gap-2 px-3 py-3 text-sm text-slate-400">
-        <Loader2 className="h-4 w-4 animate-spin text-violet-300" />
+      <div className="flex items-center gap-2 px-3 py-3 text-sm text-fg-secondary">
+        <Loader2 className="h-4 w-4 animate-spin text-brand" />
         Searching companies...
       </div>
     );
   } else if (error) {
-    dropdownContent = <div className="px-3 py-3 text-sm text-rose-300">{errorMessage}</div>;
+    dropdownContent = <div className="px-3 py-3 text-sm text-negative">{errorMessage}</div>;
   } else if (visibleResults.length === 0) {
-    dropdownContent = <div className="px-3 py-3 text-sm text-slate-400">No companies found</div>;
+    dropdownContent = <div className="px-3 py-3 text-sm text-fg-secondary">No companies found</div>;
   } else {
     dropdownContent = visibleResults.map((result, index) => (
       <button
@@ -76,15 +76,15 @@ const StockSearch: React.FC<StockSearchProps> = ({
         onMouseEnter={() => setHighlightedIndex(index)}
         onClick={() => selectResult(result)}
         className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2.5 text-left transition ${
-          highlightedIndex === index ? 'bg-violet-500/15' : 'hover:bg-white/[0.04]'
+          highlightedIndex === index ? 'bg-brand-subtle' : 'hover:bg-surface-hover'
         }`}
       >
         <span className="min-w-0">
-          <span className="block font-semibold text-white">{result.displaySymbol || result.symbol}</span>
-          <span className="block truncate text-sm text-slate-400">{result.companyName || result.description}</span>
+          <span className="block font-semibold text-fg">{result.displaySymbol || result.symbol}</span>
+          <span className="block truncate text-sm text-fg-secondary">{result.companyName || result.description}</span>
         </span>
         {result.exchange || result.countryName ? (
-          <span className="shrink-0 text-right text-xs text-slate-500">
+          <span className="shrink-0 text-right text-xs text-fg-muted">
             <span className="block uppercase tracking-wider">{result.exchange || result.instrumentType}</span>
             {result.countryName ? <span className="block">{result.countryName}</span> : null}
           </span>
@@ -96,19 +96,19 @@ const StockSearch: React.FC<StockSearchProps> = ({
   return (
     <form
       ref={searchAreaRef}
-      className="rounded-2xl border border-white/6 bg-ink-900/80 p-4 shadow-card"
+      className="rounded-2xl border border-line bg-surface p-4 shadow-card"
       onSubmit={(event) => {
         event.preventDefault();
         onSubmit();
         setIsOpen(false);
       }}
     >
-      <label htmlFor="stock-company-search" className="block text-sm font-medium text-slate-300">
+      <label htmlFor="stock-company-search" className="block text-sm font-medium text-fg-secondary">
         Search companies
       </label>
       <div className="mt-2 flex flex-col gap-2 sm:flex-row">
         <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted" />
           <input
             id="stock-company-search"
             value={query}
@@ -145,7 +145,7 @@ const StockSearch: React.FC<StockSearchProps> = ({
             aria-expanded={showDropdown}
             aria-controls="stock-search-results"
             aria-activedescendant={highlightedIndex >= 0 ? `stock-search-option-${highlightedIndex}` : undefined}
-            className={`w-full border border-white/8 bg-ink-950/60 py-2.5 pl-9 pr-3 text-sm text-white outline-none transition focus:border-violet-500/60 focus:ring-2 focus:ring-violet-500/20 ${
+            className={`w-full border border-line bg-background/80 py-2.5 pl-9 pr-3 text-sm text-fg outline-none transition focus:border-brand/60 focus:ring-2 focus:ring-focus/20 ${
               showDropdown ? 'rounded-t-lg rounded-b-none' : 'rounded-lg'
             }`}
           />
@@ -153,7 +153,7 @@ const StockSearch: React.FC<StockSearchProps> = ({
             <div
               id="stock-search-results"
               role="listbox"
-              className="absolute left-0 right-0 top-full z-30 max-h-80 overflow-y-auto rounded-b-lg border border-t-0 border-white/10 bg-ink-950/95 p-1.5 shadow-2xl backdrop-blur-xl"
+              className="absolute left-0 right-0 top-full z-30 max-h-80 overflow-y-auto rounded-b-lg border border-t-0 border-line bg-background/95 p-1.5 shadow-2xl backdrop-blur-xl"
             >
               {dropdownContent}
             </div>

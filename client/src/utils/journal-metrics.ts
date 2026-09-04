@@ -23,10 +23,10 @@ export const formatMetricRatio = (value: number | null | undefined) =>
   value === null || value === undefined || !Number.isFinite(value) ? '—' : value.toFixed(2);
 
 export const metricTone = (value: number | null | undefined) => {
-  if (value === null || value === undefined || !Number.isFinite(value)) return 'text-slate-400';
-  if (value > 0) return 'text-emerald-400';
-  if (value < 0) return 'text-rose-400';
-  return 'text-slate-300';
+  if (value === null || value === undefined || !Number.isFinite(value)) return 'text-fg-secondary';
+  if (value > 0) return 'text-positive';
+  if (value < 0) return 'text-negative';
+  return 'text-fg-secondary';
 };
 
 export const weekdayOrder = [

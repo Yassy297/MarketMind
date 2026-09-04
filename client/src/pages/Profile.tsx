@@ -23,24 +23,24 @@ const Profile: React.FC = () => {
             {initials}
           </div>
           <div>
-            <div className="text-lg font-semibold text-white">{user?.name ?? 'Guest'}</div>
-            <div className="text-sm text-slate-500">MarketMind member</div>
+            <div className="text-lg font-semibold text-fg">{user?.name ?? 'Guest'}</div>
+            <div className="text-sm text-fg-muted">MarketMind member</div>
           </div>
         </div>
 
         <div className="mt-6 space-y-3">
-          <div className="flex items-center gap-3 rounded-xl border border-white/6 bg-white/[0.02] px-4 py-3">
-            <UserIcon className="h-4 w-4 text-slate-500" />
+          <div className="flex items-center gap-3 rounded-xl border border-line bg-surface-hover px-4 py-3">
+            <UserIcon className="h-4 w-4 text-fg-muted" />
             <div>
-              <div className="text-xs uppercase tracking-wider text-slate-500">Full name</div>
-              <div className="text-sm font-medium text-slate-200">{user?.name ?? '-'}</div>
+              <div className="text-xs uppercase tracking-wider text-fg-muted">Full name</div>
+              <div className="text-sm font-medium text-fg">{user?.name ?? '-'}</div>
             </div>
           </div>
-          <div className="flex items-center gap-3 rounded-xl border border-white/6 bg-white/[0.02] px-4 py-3">
-            <Mail className="h-4 w-4 text-slate-500" />
+          <div className="flex items-center gap-3 rounded-xl border border-line bg-surface-hover px-4 py-3">
+            <Mail className="h-4 w-4 text-fg-muted" />
             <div>
-              <div className="text-xs uppercase tracking-wider text-slate-500">Email</div>
-              <div className="text-sm font-medium text-slate-200">{user?.email ?? '-'}</div>
+              <div className="text-xs uppercase tracking-wider text-fg-muted">Email</div>
+              <div className="text-sm font-medium text-fg">{user?.email ?? '-'}</div>
             </div>
           </div>
         </div>

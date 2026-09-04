@@ -4,7 +4,7 @@ import { MARKETS } from '../../config/markets';
 import type { JournalAnalyticsFilters } from '../../types/journal';
 
 export const FILTER_SELECT_CLASS =
-  'rounded-lg border border-white/8 bg-ink-950/70 px-3 py-2 text-sm text-slate-200 outline-none focus:border-violet-500/60';
+  'rounded-lg border border-line bg-background/80 px-3 py-2 text-sm text-fg outline-none focus:border-brand/60';
 
 export const emptyJournalFilters: JournalAnalyticsFilters = {
   from: '',
@@ -36,7 +36,7 @@ const JournalReportFilters = ({
   const set = (key: keyof JournalAnalyticsFilters, next: string) => onChange({ ...value, [key]: next });
 
   return (
-    <div className="grid gap-3 rounded-2xl border border-white/6 bg-ink-900/80 p-4 md:grid-cols-3 xl:grid-cols-6">
+    <div className="grid gap-3 rounded-2xl border border-line bg-surface p-4 md:grid-cols-3 xl:grid-cols-6">
       <DateTimePicker type="date" value={value.from ?? ''} onChange={(next) => set('from', next)} />
       <DateTimePicker type="date" value={value.to ?? ''} onChange={(next) => set('to', next)} />
       <select className={FILTER_SELECT_CLASS} value={value.assetClass ?? ''} onChange={(event) => set('assetClass', event.target.value)}>

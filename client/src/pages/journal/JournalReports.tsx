@@ -88,8 +88,8 @@ const JournalReports = () => {
             onClick={() => setReport(item.id)}
             className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
               report === item.id
-                ? 'bg-violet-500/15 text-violet-200 ring-1 ring-inset ring-violet-500/30'
-                : 'text-slate-400 hover:bg-white/5 hover:text-slate-100'
+                ? 'bg-brand-subtle text-brand ring-1 ring-inset ring-brand/30'
+                : 'text-fg-secondary hover:bg-surface-hover hover:text-fg'
             }`}
           >
             {item.label}
@@ -100,22 +100,22 @@ const JournalReports = () => {
       <JournalReportFilters value={filters} onChange={setFilters} />
 
       {query.isError ? (
-        <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-200">
+        <div className="rounded-xl border border-warning/25 bg-warning/10 p-4 text-sm text-warning">
           {getJournalErrorMessage(query.error, 'Unable to load this report.')}
         </div>
       ) : null}
 
-      <section className="overflow-hidden rounded-2xl border border-white/6 bg-ink-900/80 shadow-card">
+      <section className="overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
         {query.isLoading ? (
           <div className="space-y-3 p-5">
             {Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="h-12 animate-pulse rounded-lg bg-white/5" />
+              <div key={index} className="h-12 animate-pulse rounded-lg bg-surface-hover" />
             ))}
           </div>
         ) : query.data ? (
           <ReportBody data={query.data} hasFilters={hasFilters} />
         ) : (
-          <div className="p-10 text-center text-sm text-slate-500">No report data.</div>
+          <div className="p-10 text-center text-sm text-fg-muted">No report data.</div>
         )}
       </section>
     </div>
@@ -126,7 +126,7 @@ const ReportBody = ({ data, hasFilters }: { data: JournalAnalyticsResponse; hasF
   if (data.empty) {
     if (hasFilters) {
       return (
-        <div className="rounded-xl border border-dashed border-white/10 px-6 py-12 text-center text-sm text-slate-500">
+        <div className="rounded-xl border border-dashed border-line px-6 py-12 text-center text-sm text-fg-muted">
           No trades match these filters.
         </div>
       );
@@ -156,7 +156,7 @@ const ReportBody = ({ data, hasFilters }: { data: JournalAnalyticsResponse; hasF
   if (data.report === 'psychology') return <PsychologyReport data={data} />;
   if (data.report === 'time') return <TimeReport data={data} />;
   if (data.report === 'risk') return <RiskReport data={data} />;
-  return <div className="p-10 text-center text-sm text-slate-500">No report data.</div>;
+  return <div className="p-10 text-center text-sm text-fg-muted">No report data.</div>;
 };
 
 const PerformanceReport = ({
@@ -166,7 +166,7 @@ const PerformanceReport = ({
 }) => (
   <div className="space-y-5 p-5">
     {data.summary.sampleNote ? (
-      <p className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+      <p className="rounded-lg border border-warning/25 bg-warning/10 px-3 py-2 text-xs text-warning">
         {data.summary.sampleNote}
       </p>
     ) : null}
@@ -198,7 +198,7 @@ const PsychologyReport = ({
   data: Extract<JournalAnalyticsResponse, { report: 'psychology' }>;
 }) => (
   <div className="space-y-6 p-5">
-    <p className="text-sm text-slate-400">
+    <p className="text-sm text-fg-secondary">
       These figures describe trades that carried a tag or field. They do not mean a feeling or mistake caused the result.
     </p>
     <PsychologyBlock title="Mistake tags" rows={data.mistakes} prefix={(key) => `Trades tagged ${key.replace(/^Tagged /, '')} had`} />
@@ -215,7 +215,7 @@ const TimeReport = ({
 }) => (
   <div className="space-y-6 p-5">
     <div>
-      <h3 className="mb-3 font-semibold text-white">Performance by weekday</h3>
+      <h3 className="mb-3 font-semibold text-fg">Performance by weekday</h3>
       <JournalAnalyticsTable
         rows={[...data.weekday].sort((left, right) => weekdayOrder.indexOf(left.key) - weekdayOrder.indexOf(right.key))}
         columns={setupColumns}
@@ -224,7 +224,7 @@ const TimeReport = ({
     </div>
     <JournalBarChart title="Performance by month" points={monthlyPoints(data.month)} />
     <div>
-      <h3 className="mb-3 font-semibold text-white">Performance by holding duration</h3>
+      <h3 className="mb-3 font-semibold text-fg">Performance by holding duration</h3>
       <JournalAnalyticsTable
         rows={data.duration}
         columns={setupColumns}
@@ -234,11 +234,11 @@ const TimeReport = ({
     </div>
     {data.byHour ? (
       <div>
-        <h3 className="mb-3 font-semibold text-white">Performance by entry hour</h3>
+        <h3 className="mb-3 font-semibold text-fg">Performance by entry hour</h3>
         <JournalAnalyticsTable rows={data.byHour} columns={setupColumns} nameLabel="Entry hour" />
       </div>
     ) : (
-      <p className="rounded-lg border border-white/6 px-4 py-3 text-sm text-slate-500">
+      <p className="rounded-lg border border-line px-4 py-3 text-sm text-fg-muted">
         Entry-hour performance is hidden until at least five trades include an entry time.
       </p>
     )}
@@ -275,17 +275,17 @@ const PsychologyBlock = ({
   if (specified.length === 0) {
     return (
       <div>
-        <h3 className="mb-2 font-semibold text-white">{title}</h3>
-        <p className="text-sm text-slate-500">No recorded values in this category yet.</p>
+        <h3 className="mb-2 font-semibold text-fg">{title}</h3>
+        <p className="text-sm text-fg-muted">No recorded values in this category yet.</p>
       </div>
     );
   }
   return (
     <div>
-      <h3 className="mb-3 font-semibold text-white">{title}</h3>
+      <h3 className="mb-3 font-semibold text-fg">{title}</h3>
       <div className="space-y-2">
         {specified.map((row) => (
-          <div key={row.key} className="rounded-xl border border-white/6 px-4 py-3 text-sm text-slate-300">
+          <div key={row.key} className="rounded-xl border border-line px-4 py-3 text-sm text-fg-secondary">
             {relationship(prefix(row.key), row)}
           </div>
         ))}

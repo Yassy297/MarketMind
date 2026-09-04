@@ -9,11 +9,15 @@ export interface LoginInput {
   password: string;
 }
 
+export const APPEARANCE_OPTIONS = ['system', 'light', 'dark'] as const;
+export type AppearancePreference = (typeof APPEARANCE_OPTIONS)[number];
+
 export interface AuthUser {
   id: string;
   email: string;
   name: string;
   role: 'user' | 'admin';
+  appearance: AppearancePreference;
 }
 
 export interface AuthResponse {

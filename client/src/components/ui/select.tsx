@@ -1,12 +1,12 @@
 import React from 'react';
 import cn from 'classnames';
 
-type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
+type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement> & {
   invalid?: boolean;
 };
 
-const Input = React.forwardRef<HTMLInputElement, InputProps>(({ className, invalid, ...rest }, ref) => (
-  <input
+const Select = React.forwardRef<HTMLSelectElement, SelectProps>(({ className, invalid, children, ...rest }, ref) => (
+  <select
     ref={ref}
     aria-invalid={invalid || undefined}
     className={cn(
@@ -15,9 +15,11 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(({ className, inval
       className
     )}
     {...rest}
-  />
+  >
+    {children}
+  </select>
 ));
 
-Input.displayName = 'Input';
+Select.displayName = 'Select';
 
-export default Input;
+export default Select;

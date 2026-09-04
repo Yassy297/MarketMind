@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
-import type { AuthUser, LoginInput, RegisterInput } from '../types/auth';
+import type { AppearancePreference, AuthUser, LoginInput, RegisterInput } from '../types/auth';
 import { User, type IUser } from '../models/User';
 import { RefreshToken } from '../models/RefreshToken';
 
@@ -21,7 +21,8 @@ function toAuthUser(user: IUser): AuthUser {
     id: user._id.toString(),
     email: user.email,
     name: user.name,
-    role: user.role
+    role: user.role,
+    appearance: user.appearance === 'light' || user.appearance === 'dark' ? user.appearance : 'system'
   };
 }
 
@@ -94,6 +95,22 @@ class AuthService {
     await existing.save();
 
     return this.issueTokenPair(user);
+  }
+
+  async getProfile(userId: string): Promise<AuthUser> {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error('Authentication required.');
+    }
+    return toAuthUser(user);
+  }
+
+  async updateAppearance(userId: string, appearance: AppearancePreference): Promise<AuthUser> {
+    const user = await User.findByIdAndUpdate(userId, { appearance }, { new: true });
+    if (!user) {
+      throw new Error('Authentication required.');
+    }
+    return toAuthUser(user);
   }
 
   async revokeRefreshToken(rawToken: string): Promise<void> {

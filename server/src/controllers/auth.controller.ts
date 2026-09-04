@@ -54,6 +54,30 @@ export const logout = async (req: Request, res: Response) => {
   res.status(204).send();
 };
 
-export const getMe = (req: Request, res: Response) => {
-  res.json({ user: req.user });
+export const getMe = async (req: Request, res: Response) => {
+  if (!req.user?.id) {
+    res.status(401).json({ message: 'Authentication required.' });
+    return;
+  }
+  try {
+    const user = await authService.getProfile(req.user.id);
+    res.json({ user });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to load your profile.';
+    res.status(401).json({ message });
+  }
+};
+
+export const updateAppearance = async (req: Request, res: Response) => {
+  if (!req.user?.id) {
+    res.status(401).json({ message: 'Authentication required.' });
+    return;
+  }
+  try {
+    const user = await authService.updateAppearance(req.user.id, req.body.appearance);
+    res.json({ user });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to save appearance.';
+    res.status(400).json({ message });
+  }
 };

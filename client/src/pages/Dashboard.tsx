@@ -22,17 +22,17 @@ const Dashboard: React.FC = () => {
   const today = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 
   return (
-    <div className="space-y-6">
+    <div className="mm-page">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-white">Good to see you, {user?.name ?? 'there'} 👋</h1>
-          <p className="mt-1 text-sm text-slate-400">Here's what's happening in your research workspace.</p>
+        <div className="space-y-1">
+          <h1 className="text-page-title text-fg">Good to see you, {user?.name ?? 'there'}</h1>
+          <p className="text-sm text-fg-secondary">Here's what's happening in your research workspace.</p>
         </div>
-        <div className="rounded-lg border border-white/8 bg-ink-900/60 px-3 py-1.5 text-sm text-slate-400">{today}</div>
+        <div className="rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-fg-secondary">{today}</div>
       </div>
 
       {isError ? (
-        <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-4 text-sm text-rose-300">{errorMessage}</div>
+        <div className="mm-alert-error" role="alert">{errorMessage}</div>
       ) : null}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

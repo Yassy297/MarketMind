@@ -11,7 +11,7 @@ import { fetchJournalTrades, getJournalErrorMessage } from '../../services/journ
 import { formatJournalAmount } from '../../utils/currency';
 
 const selectClass =
-  'rounded-lg border border-white/8 bg-ink-950/70 px-3 py-2 text-sm text-slate-200 outline-none focus:border-violet-500/60';
+  'rounded-lg border border-line bg-background/80 px-3 py-2 text-sm text-fg outline-none focus:border-brand/60';
 
 const JournalTrades = () => {
   const [search, setSearch] = useState('');
@@ -63,7 +63,7 @@ const JournalTrades = () => {
         }
       />
 
-      <div className="grid gap-3 rounded-2xl border border-white/6 bg-ink-900/80 p-4 md:grid-cols-4">
+      <div className="grid gap-3 rounded-2xl border border-line bg-surface p-4 md:grid-cols-4">
         <Input
           placeholder="Search symbol or name"
           value={search}
@@ -99,23 +99,23 @@ const JournalTrades = () => {
         <DateTimePicker type="date" value={to} onChange={(value) => { setTo(value); setPage(1); }} />
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-white/6 bg-ink-900/80 shadow-card">
+      <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
         {query.isLoading ? (
           <div className="space-y-3 p-5">
             {Array.from({ length: 5 }).map((_, index) => (
-              <div key={index} className="h-12 animate-pulse rounded-lg bg-white/5" />
+              <div key={index} className="h-12 animate-pulse rounded-lg bg-surface-hover" />
             ))}
           </div>
         ) : query.isError ? (
-          <div className="p-5 text-sm text-amber-200">
+          <div className="p-5 text-sm text-warning">
             {getJournalErrorMessage(query.error, 'Unable to load trades.')}
           </div>
         ) : rows.length === 0 ? (
-          <div className="p-12 text-center text-sm text-slate-500">No trades match these filters.</div>
+          <div className="p-12 text-center text-sm text-fg-muted">No trades match these filters.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[880px] text-left text-sm">
-              <thead className="border-b border-white/6 text-xs uppercase tracking-wider text-slate-500">
+              <thead className="border-b border-line text-xs uppercase tracking-wider text-fg-muted">
                 <tr>
                   {['Instrument', 'Asset', 'Direction', 'Entry', 'Exit', 'P&L', 'Return', 'Entry date', 'Exit date', 'Strategy', 'Status'].map((label) => (
                     <th key={label} className="px-4 py-3 font-medium">{label}</th>
@@ -124,27 +124,27 @@ const JournalTrades = () => {
               </thead>
               <tbody>
                 {rows.map((trade) => (
-                  <tr key={trade.id} className="border-b border-white/4 last:border-0 hover:bg-white/[0.02]">
+                  <tr key={trade.id} className="border-b border-line-subtle last:border-0 hover:bg-surface-hover">
                     <td className="px-4 py-3">
-                      <Link to={`/journal/trades/${trade.id}`} className="font-medium text-white hover:text-violet-200">
+                      <Link to={`/journal/trades/${trade.id}`} className="font-medium text-fg hover:text-brand">
                         {trade.instrumentName}
                       </Link>
-                      <div className="text-xs text-slate-500">{trade.displaySymbol}</div>
+                      <div className="text-xs text-fg-muted">{trade.displaySymbol}</div>
                     </td>
-                    <td className="px-4 py-3 capitalize text-slate-300">{trade.assetClass.replace('_', ' ')}</td>
-                    <td className="px-4 py-3 text-slate-300">{trade.direction}</td>
-                    <td className="px-4 py-3 text-slate-300">{formatJournalAmount(trade.entryPrice, trade.currency)}</td>
-                    <td className="px-4 py-3 text-slate-300">{formatJournalAmount(trade.exitPrice, trade.currency)}</td>
-                    <td className={`px-4 py-3 font-medium ${(trade.netPnl ?? 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    <td className="px-4 py-3 capitalize text-fg-secondary">{trade.assetClass.replace('_', ' ')}</td>
+                    <td className="px-4 py-3 text-fg-secondary">{trade.direction}</td>
+                    <td className="px-4 py-3 text-fg-secondary">{formatJournalAmount(trade.entryPrice, trade.currency)}</td>
+                    <td className="px-4 py-3 text-fg-secondary">{formatJournalAmount(trade.exitPrice, trade.currency)}</td>
+                    <td className={`px-4 py-3 font-medium ${(trade.netPnl ?? 0) >= 0 ? 'text-positive' : 'text-negative'}`}>
                       {formatJournalAmount(trade.netPnl, trade.currency)}
                     </td>
-                    <td className={`px-4 py-3 ${(trade.returnPercent ?? 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    <td className={`px-4 py-3 ${(trade.returnPercent ?? 0) >= 0 ? 'text-positive' : 'text-negative'}`}>
                       {trade.returnPercent === null ? '—' : `${trade.returnPercent.toFixed(2)}%`}
                     </td>
-                    <td className="px-4 py-3 text-slate-400">{trade.entryDate}</td>
-                    <td className="px-4 py-3 text-slate-400">{trade.exitDate || '—'}</td>
-                    <td className="px-4 py-3 text-slate-400">{trade.strategy || '—'}</td>
-                    <td className="px-4 py-3 text-slate-300">{trade.status}</td>
+                    <td className="px-4 py-3 text-fg-secondary">{trade.entryDate}</td>
+                    <td className="px-4 py-3 text-fg-secondary">{trade.exitDate || '—'}</td>
+                    <td className="px-4 py-3 text-fg-secondary">{trade.strategy || '—'}</td>
+                    <td className="px-4 py-3 text-fg-secondary">{trade.status}</td>
                   </tr>
                 ))}
               </tbody>
@@ -154,7 +154,7 @@ const JournalTrades = () => {
       </div>
 
       {query.data && query.data.totalPages > 1 ? (
-        <div className="flex items-center justify-between text-sm text-slate-400">
+        <div className="flex items-center justify-between text-sm text-fg-secondary">
           <span>
             Page {query.data.page} of {query.data.totalPages} · {query.data.total} trades
           </span>

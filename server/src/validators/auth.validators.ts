@@ -15,4 +15,9 @@ export const loginSchema = z.object({
 });
 
 export type RegisterSchema = z.infer<typeof registerSchema>;
+export const appearanceSchema = z.object({
+  appearance: z.enum(['system', 'light', 'dark'])
+});
+
 export type LoginSchema = z.infer<typeof loginSchema>;
+export type AppearanceSchema = z.infer<typeof appearanceSchema>;

@@ -38,7 +38,7 @@ const StatementTable = ({ statement }: { statement: FinancialStatementData }) =>
     <>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[560px] text-left text-sm">
-          <thead className="border-b border-white/8 text-xs uppercase tracking-wider text-slate-500">
+          <thead className="border-b border-line text-xs uppercase tracking-wider text-fg-muted">
             <tr>
               <th className="pb-3 font-medium">Metric</th>
               <th className="pb-3 font-medium">Current period</th>
@@ -49,21 +49,21 @@ const StatementTable = ({ statement }: { statement: FinancialStatementData }) =>
           <tbody className="divide-y divide-white/6">
             {statement.summary.map((series) => (
               <tr key={series.key}>
-                <td className="py-3 font-medium text-slate-200">
+                <td className="py-3 font-medium text-fg">
                   {series.label}
                   {series.source === 'derived' ? (
-                    <div className="mt-0.5 text-[11px] font-normal text-slate-500">Derived</div>
+                    <div className="mt-0.5 text-[11px] font-normal text-fg-muted">Derived</div>
                   ) : null}
                 </td>
-                <td className="py-3 text-white">
+                <td className="py-3 text-fg">
                   {amountText(series, 0)}
-                  <span className="ml-2 text-xs text-slate-500">{series.history[0]?.period}</span>
+                  <span className="ml-2 text-xs text-fg-muted">{series.history[0]?.period}</span>
                 </td>
-                <td className="py-3 text-slate-300">
+                <td className="py-3 text-fg-secondary">
                   {amountText(series, 1)}
-                  <span className="ml-2 text-xs text-slate-500">{series.history[1]?.period}</span>
+                  <span className="ml-2 text-xs text-fg-muted">{series.history[1]?.period}</span>
                 </td>
-                <td className="py-3 text-slate-400">{changeText(series)}</td>
+                <td className="py-3 text-fg-secondary">{changeText(series)}</td>
               </tr>
             ))}
           </tbody>
@@ -71,13 +71,13 @@ const StatementTable = ({ statement }: { statement: FinancialStatementData }) =>
       </div>
 
       {statement.details.length ? (
-        <details className="mt-4 rounded-xl border border-white/6 bg-white/[0.02]">
-          <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-slate-300">
+        <details className="mt-4 rounded-xl border border-line bg-surface-hover">
+          <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-fg-secondary">
             Inspect detailed line items
           </summary>
-          <div className="overflow-x-auto border-t border-white/6 p-4">
+          <div className="overflow-x-auto border-t border-line p-4">
             <table className="w-full min-w-[640px] text-left text-sm">
-              <thead className="text-xs uppercase tracking-wider text-slate-500">
+              <thead className="text-xs uppercase tracking-wider text-fg-muted">
                 <tr>
                   <th className="pb-3 font-medium">Line item</th>
                   {periods.map((period) => (
@@ -88,11 +88,11 @@ const StatementTable = ({ statement }: { statement: FinancialStatementData }) =>
               <tbody className="divide-y divide-white/6">
                 {statement.details.map((series) => (
                   <tr key={series.key}>
-                    <td className="py-2.5 pr-4 text-slate-300">{series.label}</td>
+                    <td className="py-2.5 pr-4 text-fg-secondary">{series.label}</td>
                     {periods.map((period) => {
                       const point = series.history.find((item) => item.period === period);
                       return (
-                        <td key={period} className="py-2.5 pr-4 text-white">
+                        <td key={period} className="py-2.5 pr-4 text-fg">
                           {formatConvertedMonetaryValue(
                             point?.amount,
                             series.unit === 'crore' ? ' Cr' : ''
@@ -122,23 +122,23 @@ const FinancialStatements = ({
 }: FinancialStatementsProps) => {
   const controls = (
     <div className="flex flex-wrap gap-2">
-      <label className="text-xs text-slate-500">
+      <label className="text-xs text-fg-muted">
         <span className="sr-only">Reporting period</span>
         <select
           value={reportingPeriod}
           onChange={(event) => onReportingPeriodChange(event.target.value as ReportingPeriod)}
-          className="rounded-lg border border-white/8 bg-ink-950/70 px-3 py-2 text-sm text-slate-200 outline-none focus:border-violet-500/60"
+          className="rounded-lg border border-line bg-background/80 px-3 py-2 text-sm text-fg outline-none focus:border-brand/60"
         >
           <option value="yearly">Annual</option>
           <option value="quarterly">Quarterly</option>
         </select>
       </label>
-      <label className="text-xs text-slate-500">
+      <label className="text-xs text-fg-muted">
         <span className="sr-only">Statement scope</span>
         <select
           value={statementType}
           onChange={(event) => onStatementTypeChange(event.target.value as StatementType)}
-          className="rounded-lg border border-white/8 bg-ink-950/70 px-3 py-2 text-sm text-slate-200 outline-none focus:border-violet-500/60"
+          className="rounded-lg border border-line bg-background/80 px-3 py-2 text-sm text-fg outline-none focus:border-brand/60"
         >
           <option value="consolidated">Consolidated</option>
           <option value="standalone">Standalone</option>

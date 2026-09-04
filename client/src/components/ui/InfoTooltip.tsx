@@ -68,7 +68,7 @@ const InfoTooltip = ({ label, children }: InfoTooltipProps) => {
       <button
         ref={buttonRef}
         type="button"
-        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-slate-500 transition hover:bg-white/5 hover:text-violet-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50"
+        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-fg-muted transition hover:bg-surface-hover hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/50"
         aria-label={`About ${label}`}
         aria-expanded={open}
         aria-controls={tooltipId}
@@ -96,7 +96,7 @@ const InfoTooltip = ({ label, children }: InfoTooltipProps) => {
           id={tooltipId}
           role="tooltip"
           style={{ top: coords.top, left: coords.left }}
-          className={`fixed z-50 max-w-[260px] rounded-lg border border-white/10 bg-ink-950 px-3 py-2 text-xs leading-relaxed text-slate-200 shadow-card ${ready ? 'opacity-100' : 'opacity-0'}`}
+          className={`fixed z-50 max-w-[260px] rounded-lg border border-line bg-background px-3 py-2 text-xs leading-relaxed text-fg shadow-card ${ready ? 'opacity-100' : 'opacity-0'}`}
           onMouseEnter={() => {
             window.clearTimeout(closeTimer.current);
             setOpen(true);

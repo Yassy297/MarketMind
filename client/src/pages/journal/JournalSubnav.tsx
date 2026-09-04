@@ -18,8 +18,8 @@ const JournalSubnav = () => (
         className={({ isActive }) =>
           `rounded-lg px-3 py-1.5 text-sm font-medium transition ${
             isActive
-              ? 'bg-violet-500/15 text-violet-200 ring-1 ring-inset ring-violet-500/30'
-              : 'text-slate-400 hover:bg-white/5 hover:text-slate-100'
+              ? 'bg-brand-subtle text-brand ring-1 ring-inset ring-brand/30'
+              : 'text-fg-secondary hover:bg-surface-hover hover:text-fg'
           }`
         }
       >

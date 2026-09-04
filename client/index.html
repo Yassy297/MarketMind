@@ -5,6 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/marketmind-logo.svg" />
     <title>MarketMind</title>
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('marketmind-appearance') || 'system';
+          var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var resolved = stored === 'light' ? 'light' : stored === 'dark' ? 'dark' : systemDark ? 'dark' : 'light';
+          document.documentElement.classList.add(resolved);
+          document.documentElement.dataset.appearance = stored;
+          document.documentElement.style.colorScheme = resolved;
+        } catch (error) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

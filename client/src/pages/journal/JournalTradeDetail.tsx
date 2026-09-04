@@ -15,16 +15,16 @@ import {
 import { formatJournalAmount } from '../../utils/currency';
 
 const Section = ({ title, children }: { title: string; children: ReactNode }) => (
-  <section className="rounded-2xl border border-white/6 bg-ink-900/80 p-5 shadow-card">
-    <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-400">{title}</h2>
+  <section className="rounded-2xl border border-line bg-surface p-5 shadow-card">
+    <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-fg-secondary">{title}</h2>
     {children}
   </section>
 );
 
 const Row = ({ label, value }: { label: string; value?: ReactNode }) => (
-  <div className="flex justify-between gap-4 border-b border-white/4 py-2 last:border-0">
-    <span className="text-sm text-slate-500">{label}</span>
-    <span className="text-right text-sm text-slate-200">{value ?? '—'}</span>
+  <div className="flex justify-between gap-4 border-b border-line-subtle py-2 last:border-0">
+    <span className="text-sm text-fg-muted">{label}</span>
+    <span className="text-right text-sm text-fg">{value ?? '—'}</span>
   </div>
 );
 
@@ -67,15 +67,15 @@ const JournalTradeDetail = () => {
   if (query.isLoading) {
     return (
       <div className="space-y-4">
-        <div className="h-16 animate-pulse rounded-2xl bg-white/5" />
-        <div className="h-48 animate-pulse rounded-2xl bg-white/5" />
+        <div className="h-16 animate-pulse rounded-2xl bg-surface-hover" />
+        <div className="h-48 animate-pulse rounded-2xl bg-surface-hover" />
       </div>
     );
   }
 
   if (query.isError || !query.data) {
     return (
-      <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-200">
+      <div className="rounded-xl border border-warning/25 bg-warning/10 p-4 text-sm text-warning">
         {getJournalErrorMessage(query.error, 'Trade not found.')}
       </div>
     );
@@ -83,7 +83,7 @@ const JournalTradeDetail = () => {
 
   const trade = query.data;
   const assetLabel = ASSET_CLASS_OPTIONS.find((option) => option.value === trade.assetClass)?.label ?? trade.assetClass;
-  const pnlClass = (trade.netPnl ?? 0) >= 0 ? 'text-emerald-400' : 'text-rose-400';
+  const pnlClass = (trade.netPnl ?? 0) >= 0 ? 'text-positive' : 'text-negative';
   const details = trade.assetDetails ?? {};
 
   return (
@@ -117,34 +117,34 @@ const JournalTradeDetail = () => {
       />
 
       <div className="grid gap-4 sm:grid-cols-4">
-        <div className="rounded-2xl border border-white/6 bg-ink-900/80 p-4">
-          <div className="text-xs uppercase tracking-wider text-slate-500">Direction</div>
-          <div className="mt-1 text-lg font-semibold text-white">{trade.direction}</div>
+        <div className="rounded-2xl border border-line bg-surface p-4">
+          <div className="text-xs uppercase tracking-wider text-fg-muted">Direction</div>
+          <div className="mt-1 text-lg font-semibold text-fg">{trade.direction}</div>
         </div>
-        <div className="rounded-2xl border border-white/6 bg-ink-900/80 p-4">
-          <div className="text-xs uppercase tracking-wider text-slate-500">Net P&L</div>
+        <div className="rounded-2xl border border-line bg-surface p-4">
+          <div className="text-xs uppercase tracking-wider text-fg-muted">Net P&L</div>
           <div className={`mt-1 text-lg font-semibold ${pnlClass}`}>
             {formatJournalAmount(trade.netPnl, trade.currency)}
           </div>
         </div>
-        <div className="rounded-2xl border border-white/6 bg-ink-900/80 p-4">
-          <div className="text-xs uppercase tracking-wider text-slate-500">Return</div>
+        <div className="rounded-2xl border border-line bg-surface p-4">
+          <div className="text-xs uppercase tracking-wider text-fg-muted">Return</div>
           <div className={`mt-1 text-lg font-semibold ${pnlClass}`}>
             {trade.returnPercent === null ? '—' : `${trade.returnPercent.toFixed(2)}%`}
           </div>
         </div>
-        <div className="rounded-2xl border border-white/6 bg-ink-900/80 p-4">
-          <div className="text-xs uppercase tracking-wider text-slate-500">Status</div>
-          <div className="mt-1 text-lg font-semibold text-white">{trade.status}</div>
+        <div className="rounded-2xl border border-line bg-surface p-4">
+          <div className="text-xs uppercase tracking-wider text-fg-muted">Status</div>
+          <div className="mt-1 text-lg font-semibold text-fg">{trade.status}</div>
         </div>
       </div>
 
       {actionError ? (
-        <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-200">{actionError}</div>
+        <div className="rounded-xl border border-warning/25 bg-warning/10 p-4 text-sm text-warning">{actionError}</div>
       ) : null}
 
       {confirmDelete ? (
-        <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-4">
+        <div className="rounded-xl border border-negative/25 bg-negative/10 p-4">
           <p className="text-sm text-rose-100">Delete this journal entry? This cannot be undone.</p>
           <div className="mt-3 flex gap-2">
             <Button
@@ -214,8 +214,8 @@ const JournalTradeDetail = () => {
             ['Notes', trade.notes]
           ].map(([label, value]) => (
             <div key={String(label)}>
-              <div className="mb-1 text-xs uppercase tracking-wider text-slate-500">{label}</div>
-              <p className="whitespace-pre-wrap text-sm text-slate-200">{value || '—'}</p>
+              <div className="mb-1 text-xs uppercase tracking-wider text-fg-muted">{label}</div>
+              <p className="whitespace-pre-wrap text-sm text-fg">{value || '—'}</p>
             </div>
           ))}
         </div>
@@ -224,13 +224,13 @@ const JournalTradeDetail = () => {
       <Section title="Mistakes and tags">
         <div className="flex flex-wrap gap-2">
           {(trade.mistakeTags ?? []).length === 0 && (trade.tags ?? []).length === 0 ? (
-            <span className="text-sm text-slate-500">No tags recorded.</span>
+            <span className="text-sm text-fg-muted">No tags recorded.</span>
           ) : null}
           {(trade.mistakeTags ?? []).map((tag) => (
-            <span key={`m-${tag}`} className="rounded-full bg-rose-500/10 px-3 py-1 text-xs text-rose-200">{tag}</span>
+            <span key={`m-${tag}`} className="rounded-full bg-negative/10 px-3 py-1 text-xs text-negative">{tag}</span>
           ))}
           {(trade.tags ?? []).map((tag) => (
-            <span key={`t-${tag}`} className="rounded-full bg-white/5 px-3 py-1 text-xs text-slate-300">{tag}</span>
+            <span key={`t-${tag}`} className="rounded-full bg-surface-hover px-3 py-1 text-xs text-fg-secondary">{tag}</span>
           ))}
         </div>
       </Section>
@@ -247,9 +247,9 @@ const JournalTradeDetail = () => {
 
       <Section title="Attachments">
         {(trade.attachments ?? []).length === 0 ? (
-          <p className="text-sm text-slate-500">No attachment metadata stored for this entry.</p>
+          <p className="text-sm text-fg-muted">No attachment metadata stored for this entry.</p>
         ) : (
-          <ul className="space-y-2 text-sm text-slate-300">
+          <ul className="space-y-2 text-sm text-fg-secondary">
             {trade.attachments?.map((file) => (
               <li key={file.name}>{file.name}{file.mimeType ? ` · ${file.mimeType}` : ''}</li>
             ))}

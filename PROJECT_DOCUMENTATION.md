@@ -18,6 +18,7 @@ MarketMind is a full-stack SaaS-style financial research platform with a React +
 - **Cookie-Based Authentication**: httpOnly cookies, refresh token rotation, session restoration
 - **Protected Routes**: Authentication guard on all research features
 - **Trade Journal**: Record, review, and analyze trades already taken (MarketMind does not place or execute orders)
+- **Appearance**: System / Light / Dark theme persisted to the authenticated user (visual only; does not affect market or journal data)
 
 ## High-Level Architecture
 
@@ -1011,6 +1012,65 @@ Stored as strings on `JournalTrade`. The Add/Edit form offers predefined options
 
 Journal mutations invalidate `journal-stats`, `journal-overview`, `journal-trades`, `journal-calendar`, `journal-analytics`, and the affected `journal-trade` query. Stock, dashboard, and market-context queries are not refetched. Journal analytics are not stored in a shared server cache.
 
+## Design System
+
+**Status: ✅ IMPLEMENTED (visual theme and component polish)**
+
+MarketMind uses a semantic token layer so screens can switch between light and dark without rewriting business components. The purple/indigo brand accent is unchanged. Theme changes are visual only: they do not invalidate stock, journal, watchlist, or market-context queries, and they do not open `MarketTransitionLoader`.
+
+### Semantic theme tokens
+
+Defined as RGB channel tokens in `client/src/styles.css` (so Tailwind opacity modifiers work) and mapped in `client/tailwind.config.js`:
+
+`--background`, `--background-secondary`, `--surface`, `--surface-elevated`, `--surface-hover`, `--border`, `--border-subtle`, `--text-primary`, `--text-secondary`, `--text-muted`, `--brand`, `--brand-hover`, `--brand-subtle`, `--positive`, `--negative`, `--warning`, `--info`, `--focus`
+
+Tailwind aliases: `bg-background`, `bg-surface`, `border-line`, `text-fg`, `text-fg-secondary`, `text-fg-muted`, `text-brand`, `text-positive`, `text-negative`, `text-warning`, `text-info`. The color is named `line` because Tailwind’s `border` utility is reserved for width.
+
+### Dark theme
+
+Very dark navy/ink page background (`#0c101c`), slightly lighter surfaces, subtle slate borders, high-contrast primary text, muted blue-gray secondary text, MarketMind purple accent. Not pure black. Financial colors: green / red / amber.
+
+### Light theme
+
+Soft gray page background (`#f3f5f8`), white surfaces, gray borders, charcoal primary text, muted gray secondary text, the same purple accent. Inputs use `--background` so they stay distinct from cards. This is a separate palette, not an inversion of dark mode.
+
+### Typography hierarchy
+
+- Page title: `text-page-title` (~28px)
+- Section title: `text-section-title` (~18px)
+- Card title: `text-card-title` (~15px)
+- Body: 14px
+- Secondary / table meta: 12–13px
+- Important financial values: 20–28px via card/metric components
+
+### Spacing and surfaces
+
+Page content uses `mm-page` (`space-y-6`) and `p-4 sm:p-6` in the dashboard shell. Cards: `mm-card` (primary), `mm-card-secondary` (supporting), `mm-interactive` (clickable). Not every block uses the same heavy border.
+
+### Semantic financial colors
+
+Positive / negative / warning / info tokens. Calendar and P&L also include text labels (Profit, Loss, Breakeven, No trades) so color is not the only indicator.
+
+### Component styling conventions
+
+Shared primitives live under `client/src/components/ui/`: Button (primary, secondary, outline, ghost, danger, icon + loading), Input, Select, Textarea, DateTimePicker, SegmentedControl, EmptyState, InfoTooltip. Tables use `.mm-table`. Form controls use `.mm-field`.
+
+### Appearance
+
+Options: **System** (default), **Light**, **Dark**.
+
+- Boot script in `client/index.html` reads `localStorage.marketmind-appearance` and applies `html.light` or `html.dark` before React renders, to limit theme flash.
+- After login, `GET /auth/me` is the source of truth. `ThemeProvider` reconciles the server value.
+- Settings → Appearance uses a keyboard-accessible segmented radio control. Changes apply immediately and persist with `PATCH /auth/me`.
+- `User.appearance` is stored on the user document, not inside MarketContext preferences.
+- Logout keeps the last local bootstrap value; the next authenticated session overwrites it from the server.
+
+### Favicon
+
+The existing `client/public/marketmind-logo.svg` is used as the favicon (`client/index.html`) and as in-app brand mark (sidebar, auth layout, market transition loader). The artwork was not redesigned.
+
+Watchlist multi-list functionality is **not** implemented. The Watchlist page is a design-system foundation only.
+
 ## Root Structure
 
 - `client/` - React frontend application (Vite + Tailwind CSS)
@@ -1042,15 +1102,18 @@ client/
         InfoTooltip.tsx              # Reusable field help tooltip
       Navbar.tsx              # Top navigation with country/currency selectors
       Sidebar.tsx             # Icon-based navigation menu
+      BrandMark.tsx           # Existing MarketMind logo asset
       DashboardCard.tsx        # Reusable card layout
       PageHeader.tsx           # Page title/header area
-      MarketTransitionLoader.tsx  # Loading overlay during market changes
+      MarketTransitionLoader.tsx  # Loading overlay during market changes (market only)
     config/
       markets.ts              # Country/market/currency registry
       journal.ts              # Journal presets, field help, Custom-value helpers
+      appearance.ts           # System/Light/Dark helpers and local bootstrap
     context/
       AuthContext.tsx         # JWT + refresh token state
       MarketContext.tsx       # Market preferences + query invalidation
+      ThemeContext.tsx        # Appearance preference (visual only)
     hooks/
       useAuth.ts              # Hook to access AuthContext
       useMarketContext.ts     # Hook to access MarketContext
@@ -1071,11 +1134,11 @@ client/
         JournalReports.tsx    # Strategy/setup/psychology/time/risk reports
       Login.tsx               # Login form
       Register.tsx            # Registration form
-      Watchlist.tsx           # (scaffolded)
+      Watchlist.tsx           # UI foundation only (multi-watchlist not implemented)
       Documents.tsx           # (scaffolded)
       AIChat.tsx              # (scaffolded)
-      Settings.tsx            # (scaffolded)
-      Profile.tsx             # (scaffolded)
+      Settings.tsx            # Appearance implemented; other preference rows remain placeholders
+      Profile.tsx             # Account summary
     services/
       api.ts                  # Axios instance with auth cookie interceptor
       auth.ts                 # Auth API calls (login, register, refresh)
@@ -1089,8 +1152,8 @@ client/
       journal-metrics.ts      # Journal metric formatting (null → —)
     App.tsx                   # App routing and shell layout
     main.tsx                  # Vite entry point
-    styles.css                # Tailwind base layer + custom dark theme
-  tailwind.config.js          # Tailwind config with custom ink color palette
+    styles.css                # Semantic theme tokens, light/dark palettes, component utilities
+  tailwind.config.js          # Tailwind tokens mapped to CSS variables
   vite.config.ts              # Vite build config
   tsconfig.json               # TypeScript config
   package.json
@@ -1224,6 +1287,8 @@ server/
 | POST | `/auth/login` | ❌ | Login, get access + refresh tokens |
 | POST | `/auth/refresh` | ❌ | Refresh access token (uses refreshToken cookie) |
 | POST | `/auth/logout` | ✅ | Logout, clear cookies |
+| GET | `/auth/me` | ✅ | Current user, including saved appearance |
+| PATCH | `/auth/me` | ✅ | Update appearance only (`system` \| `light` \| `dark`). Does not change market preferences |
 
 ### Market Context
 
@@ -1537,6 +1602,7 @@ npm run lint          # Lint both workspaces
 - Navbar country/currency selectors with flags
 - Recently viewed stock history per user (up to 5 items)
 - Stock search with autocomplete dropdown (300ms debounce)
+- Appearance: System / Light / Dark, persisted on the user document and bootstrapped from localStorage to reduce theme flash
 
 **Stock Intelligence:**
 - Stock data endpoints: search, profile, quote, news, recommendation, composite, fundamentals, statements, shareholding, corporate actions, and competitors
@@ -1574,8 +1640,9 @@ npm run lint          # Lint both workspaces
 
 **Watchlist:**
 - ✅ Model defined and database schema ready
+- ✅ Watchlist page polished to the design system as a visual foundation
 - ❌ API endpoints not implemented
-- ❌ Frontend UI not implemented
+- ❌ Multi-watchlist functionality not implemented
 
 ### Prepared
 
@@ -1606,6 +1673,14 @@ npm run lint          # Lint both workspaces
 - **Access Token TTL**: 15 minutes
 - **Refresh Token TTL**: 30 days
 - **Currency Conversion Cache**: 6 hours
+
+### Verification performed (4 September 2026 — Design system and appearance)
+
+- Backend TypeScript compile: passed
+- Frontend TypeScript check and Vite production build: passed
+- Frontend and backend ESLint: passed
+- Server unit tests via `npm test`: 66 passed, including appearance validation
+- Theme changes are isolated from MarketContext; Watchlist remains a UI foundation only
 
 ### Verification performed (31 August 2026 — Trade Journal dashboard, calendar, analytics)
 

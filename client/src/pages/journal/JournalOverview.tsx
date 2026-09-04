@@ -21,10 +21,10 @@ const PerformanceMetric = ({
   note?: string;
   tone?: string;
 }) => (
-  <div className="rounded-xl border border-white/6 bg-ink-950/50 p-4">
-    <div className="text-xs uppercase tracking-wider text-slate-500">{label}</div>
-    <div className={`mt-2 text-lg font-semibold ${tone ?? 'text-white'}`}>{value}</div>
-    {note ? <div className="mt-1 text-xs text-slate-500">{note}</div> : null}
+  <div className="rounded-xl border border-line bg-background/50 p-4">
+    <div className="text-xs uppercase tracking-wider text-fg-muted">{label}</div>
+    <div className={`mt-2 text-lg font-semibold ${tone ?? 'text-fg'}`}>{value}</div>
+    {note ? <div className="mt-1 text-xs text-fg-muted">{note}</div> : null}
   </div>
 );
 
@@ -59,7 +59,7 @@ const JournalOverview = () => {
       />
 
       {overviewQuery.isError ? (
-        <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-200">
+        <div className="rounded-xl border border-warning/25 bg-warning/10 p-4 text-sm text-warning">
           {getJournalErrorMessage(overviewQuery.error, 'Unable to load journal overview.')}
         </div>
       ) : null}
@@ -97,10 +97,10 @@ const JournalOverview = () => {
             />
           </div>
 
-          <section className="rounded-2xl border border-white/6 bg-ink-900/80 p-5 shadow-card">
-            <h2 className="mb-4 font-semibold text-white">Performance</h2>
+          <section className="rounded-2xl border border-line bg-surface p-5 shadow-card">
+            <h2 className="mb-4 font-semibold text-fg">Performance</h2>
             {performance?.sampleNote ? (
-              <p className="mb-4 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+              <p className="mb-4 rounded-lg border border-warning/25 bg-warning/10 px-3 py-2 text-xs text-warning">
                 {performance.sampleNote}
               </p>
             ) : null}
@@ -136,20 +136,20 @@ const JournalOverview = () => {
       ) : null}
 
       {overview && !overview.empty ? (
-      <section className="rounded-2xl border border-white/6 bg-ink-900/80 p-5 shadow-card">
+      <section className="rounded-2xl border border-line bg-surface p-5 shadow-card">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-semibold text-white">Recent trades</h2>
-          <Link to="/journal/trades" className="text-sm text-violet-300 hover:text-violet-200">
+          <h2 className="font-semibold text-fg">Recent trades</h2>
+          <Link to="/journal/trades" className="text-sm text-brand hover:text-brand">
             View all
           </Link>
         </div>
         {recentQuery.isLoading ? (
           <div className="space-y-2">
-            <div className="h-10 animate-pulse rounded-lg bg-white/5" />
-            <div className="h-10 animate-pulse rounded-lg bg-white/5" />
+            <div className="h-10 animate-pulse rounded-lg bg-surface-hover" />
+            <div className="h-10 animate-pulse rounded-lg bg-surface-hover" />
           </div>
         ) : (recentQuery.data?.items.length ?? 0) === 0 ? (
-          <div className="rounded-lg border border-dashed border-white/10 p-8 text-center text-sm text-slate-500">
+          <div className="rounded-lg border border-dashed border-line p-8 text-center text-sm text-fg-muted">
             No trades recorded yet. Add a trade you have already taken.
           </div>
         ) : (
@@ -158,11 +158,11 @@ const JournalOverview = () => {
               <Link
                 key={trade.id}
                 to={`/journal/trades/${trade.id}`}
-                className="flex items-center justify-between rounded-xl border border-white/6 px-4 py-3 hover:border-violet-500/30"
+                className="flex items-center justify-between rounded-xl border border-line px-4 py-3 hover:border-brand/30"
               >
                 <div>
-                  <div className="font-medium text-white">{trade.instrumentName}</div>
-                  <div className="text-xs text-slate-500">
+                  <div className="font-medium text-fg">{trade.instrumentName}</div>
+                  <div className="text-xs text-fg-muted">
                     {trade.displaySymbol} · {trade.direction} · {trade.status}
                   </div>
                 </div>

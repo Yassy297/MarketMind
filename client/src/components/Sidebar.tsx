@@ -1,8 +1,9 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, LineChart, BookOpen, Star, MessageSquare, FileText, Settings, User, LogOut, TrendingUp, Menu } from 'lucide-react';
+import { LayoutDashboard, LineChart, BookOpen, Star, MessageSquare, FileText, Settings, User, LogOut, Menu } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import BrandMark from './BrandMark';
 
 const items = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -30,27 +31,25 @@ const Sidebar: React.FC<{ collapsed?: boolean; onToggle?: () => void }> = ({
   return (
     <motion.aside
       initial={false}
-      animate={{ width: collapsed ? 96 : 240 }}
-      className="h-screen shrink-0 flex flex-col justify-between border-r border-white/6 bg-ink-950 px-3 py-5"
+      animate={{ width: collapsed ? 80 : 232 }}
+      className="flex h-screen shrink-0 flex-col justify-between border-r border-line bg-surface px-2.5 py-4"
     >
       <div>
-        <div className="mb-8 flex items-center gap-1 px-1">
+        <div className="mb-7 flex items-center gap-1 px-1">
           <button
             type="button"
             onClick={onToggle}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/5 hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-fg-secondary transition hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40"
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             aria-expanded={!collapsed}
           >
             <Menu className="h-[18px] w-[18px]" />
           </button>
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-gradient shadow-glow">
-            <TrendingUp className="h-4 w-4 text-white" strokeWidth={2.5} />
-          </div>
-          {!collapsed && <span className="text-[15px] font-semibold tracking-tight text-white">MarketMind</span>}
+          <BrandMark size={32} />
+          {!collapsed && <span className="text-[15px] font-semibold tracking-tight text-fg">MarketMind</span>}
         </div>
 
-        <nav className="flex flex-col gap-1">
+        <nav className="flex flex-col gap-0.5">
           {items.map((it) => {
             const Icon = it.icon;
             return (
@@ -59,16 +58,16 @@ const Sidebar: React.FC<{ collapsed?: boolean; onToggle?: () => void }> = ({
                 to={it.to}
                 end={it.to === '/'}
                 className={({ isActive }) =>
-                  `group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
+                  `group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40 ${
                     isActive
-                      ? 'bg-brand-gradient-soft text-white ring-1 ring-inset ring-violet-500/30'
-                      : 'text-slate-400 hover:bg-white/5 hover:text-slate-100'
-                  } ${collapsed ? 'justify-center' : ''}`
+                      ? 'bg-brand-subtle text-fg ring-1 ring-inset ring-brand/25'
+                      : 'text-fg-secondary hover:bg-surface-hover hover:text-fg'
+                  } ${collapsed ? 'justify-center px-2' : ''}`
                 }
               >
                 {({ isActive }) => (
                   <>
-                    <Icon className={`h-[18px] w-[18px] shrink-0 ${isActive ? 'text-violet-300' : ''}`} />
+                    <Icon className={`h-[18px] w-[18px] shrink-0 ${isActive ? 'text-brand' : ''}`} />
                     {!collapsed && <span className="font-medium">{it.label}</span>}
                   </>
                 )}
@@ -81,7 +80,7 @@ const Sidebar: React.FC<{ collapsed?: boolean; onToggle?: () => void }> = ({
       <button
         type="button"
         onClick={handleLogout}
-        className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-400 transition-colors hover:bg-white/5 hover:text-rose-300 ${collapsed ? 'justify-center' : ''}`}
+        className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-fg-secondary transition-colors hover:bg-surface-hover hover:text-negative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/40 ${collapsed ? 'justify-center px-2' : ''}`}
       >
         <LogOut className="h-[18px] w-[18px] shrink-0" />
         {!collapsed && <span>Logout</span>}

@@ -261,7 +261,7 @@ const Stocks: React.FC = () => {
       />
 
       {profileUnavailable ? (
-        <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-4 text-sm text-rose-300">
+        <div className="rounded-xl border border-negative/25 bg-negative/10 p-4 text-sm text-negative">
           {profileQuery.isError
             ? getStockErrorMessage(
                 profileQuery.error,
@@ -272,7 +272,7 @@ const Stocks: React.FC = () => {
       ) : null}
 
       {quoteQuery.isError ? (
-        <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-200">
+        <div className="rounded-xl border border-warning/25 bg-warning/10 p-4 text-sm text-warning">
           {getStockErrorMessage(quoteQuery.error, 'The latest quote is temporarily unavailable.')}
         </div>
       ) : null}
@@ -354,28 +354,28 @@ const Stocks: React.FC = () => {
       ) : null}
 
       <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-        <div className="rounded-2xl border border-white/6 bg-ink-900/80 p-5 shadow-card">
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-card">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="flex items-center gap-2 font-semibold text-white">
-              <Newspaper className="h-4 w-4 text-slate-500" />
+            <h3 className="flex items-center gap-2 font-semibold text-fg">
+              <Newspaper className="h-4 w-4 text-fg-muted" />
               Latest news
             </h3>
           </div>
           {newsQuery.isLoading && (
             <div className="space-y-3">
-              <div className="h-20 animate-pulse rounded-lg bg-white/5" />
-              <div className="h-20 animate-pulse rounded-lg bg-white/5" />
+              <div className="h-20 animate-pulse rounded-lg bg-surface-hover" />
+              <div className="h-20 animate-pulse rounded-lg bg-surface-hover" />
             </div>
           )}
           {newsQuery.isError && !newsQuery.isLoading && (
-            <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-200">
+            <div className="rounded-lg border border-warning/25 bg-warning/10 p-3 text-sm text-warning">
               {getStockErrorMessage(newsQuery.error, 'News temporarily unavailable.')}
             </div>
           )}
           {!newsQuery.isLoading && !newsQuery.isError && (
             <div className="grid gap-3">
               {(newsQuery.data ?? []).length === 0 ? (
-                <div className="rounded-lg border border-dashed border-white/10 p-4 text-center text-sm text-slate-500">
+                <div className="rounded-lg border border-dashed border-line p-4 text-center text-sm text-fg-muted">
                   No recent news available.
                 </div>
               ) : (
@@ -408,7 +408,7 @@ const Stocks: React.FC = () => {
             loading={recommendationQuery.isLoading}
           />
           {recommendationQuery.isError ? (
-            <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-200">
+            <div className="rounded-xl border border-warning/25 bg-warning/10 p-4 text-sm text-warning">
               {getStockErrorMessage(
                 recommendationQuery.error,
                 'Analyst recommendations are unavailable for this instrument.'
@@ -416,26 +416,26 @@ const Stocks: React.FC = () => {
             </div>
           ) : null}
 
-          <div className="rounded-2xl border border-white/6 bg-ink-900/80 p-5 shadow-card">
+          <div className="rounded-2xl border border-line bg-surface p-5 shadow-card">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-semibold text-white">Recently viewed</h3>
-              <span className="text-xs uppercase tracking-wider text-slate-500">Your last 5</span>
+              <h3 className="font-semibold text-fg">Recently viewed</h3>
+              <span className="text-xs uppercase tracking-wider text-fg-muted">Your last 5</span>
             </div>
             {recentlyViewedQuery.isLoading && (
               <div className="space-y-2">
-                <div className="h-10 animate-pulse rounded-lg bg-white/5" />
-                <div className="h-10 animate-pulse rounded-lg bg-white/5" />
+                <div className="h-10 animate-pulse rounded-lg bg-surface-hover" />
+                <div className="h-10 animate-pulse rounded-lg bg-surface-hover" />
               </div>
             )}
             {recentlyViewedQuery.isError && !recentlyViewedQuery.isLoading && (
-              <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 p-3 text-sm text-rose-300">
+              <div className="rounded-lg border border-negative/25 bg-negative/10 p-3 text-sm text-negative">
                 Unable to load recently viewed companies.
               </div>
             )}
             {!recentlyViewedQuery.isLoading && !recentlyViewedQuery.isError && (
               <div className="space-y-2">
                 {(recentlyViewedQuery.data ?? []).length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-white/10 p-4 text-center text-sm text-slate-500">
+                  <div className="rounded-lg border border-dashed border-line p-4 text-center text-sm text-fg-muted">
                     Nothing viewed yet.
                   </div>
                 ) : (
@@ -444,10 +444,10 @@ const Stocks: React.FC = () => {
                       key={`${item.symbol}-${item.viewedAt}`}
                       type="button"
                       onClick={() => selectStock(item.symbol, item.market ?? market)}
-                      className="w-full rounded-xl border border-white/6 bg-white/[0.02] p-3 text-left transition hover:border-violet-500/40 hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/30"
+                      className="w-full rounded-xl border border-line bg-surface-hover p-3 text-left transition hover:border-brand/40 hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
                     >
-                      <div className="font-medium text-white">{item.symbol}</div>
-                      <div className="text-sm text-slate-400">{item.company}</div>
+                      <div className="font-medium text-fg">{item.symbol}</div>
+                      <div className="text-sm text-fg-secondary">{item.company}</div>
                     </button>
                   ))
                 )}

@@ -1,8 +1,7 @@
 import { useEffect, useId, useRef } from 'react';
 import Input from '../ui/input';
 
-const fieldClass =
-  'w-full rounded-lg border border-white/8 bg-ink-900/80 px-3.5 py-2.5 text-sm text-slate-100 outline-none focus:border-violet-500/60 focus:ring-2 focus:ring-violet-500/20';
+const fieldClass = 'mm-field';
 
 type PresetOrCustomSelectProps = {
   id?: string;

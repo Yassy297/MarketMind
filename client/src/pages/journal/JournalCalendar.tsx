@@ -12,10 +12,17 @@ import type { JournalCalendarDaySummary, JournalCalendarOutcome } from '../../ty
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const outcomeClass: Record<JournalCalendarOutcome, string> = {
-  PROFIT: 'bg-emerald-500/15 text-emerald-200 ring-emerald-500/30',
-  LOSS: 'bg-rose-500/15 text-rose-200 ring-rose-500/30',
-  BREAKEVEN: 'bg-amber-500/10 text-amber-100 ring-amber-500/20',
-  NO_TRADES: 'bg-white/0 text-slate-500 ring-white/5'
+  PROFIT: 'bg-positive/10 text-positive ring-positive/25',
+  LOSS: 'bg-negative/10 text-negative ring-negative/25',
+  BREAKEVEN: 'bg-warning/10 text-warning ring-warning/25',
+  NO_TRADES: 'bg-transparent text-fg-muted ring-border'
+};
+
+const outcomeLabel: Record<JournalCalendarOutcome, string> = {
+  PROFIT: 'Profit',
+  LOSS: 'Loss',
+  BREAKEVEN: 'Breakeven',
+  NO_TRADES: 'No trades'
 };
 
 const monthLabel = (year: number, month: number) =>
@@ -87,9 +94,9 @@ const JournalCalendar = () => {
 
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-white">{monthLabel(year, month)}</h2>
+          <h2 className="text-lg font-semibold text-fg">{monthLabel(year, month)}</h2>
           {monthQuery.data ? (
-            <p className="mt-1 text-sm text-slate-400">
+            <p className="mt-1 text-sm text-fg-secondary">
               {monthQuery.data.monthTrades} trades · {monthQuery.data.monthWins} wins · {monthQuery.data.monthLosses} losses ·{' '}
               <span className={metricTone(monthQuery.data.monthNetPnl)}>
                 {formatMetricNumber(monthQuery.data.monthNetPnl, { signed: true })}
@@ -100,30 +107,30 @@ const JournalCalendar = () => {
         <div className="flex flex-wrap gap-2 text-xs">
           {(['PROFIT', 'LOSS', 'BREAKEVEN', 'NO_TRADES'] as JournalCalendarOutcome[]).map((outcome) => (
             <span key={outcome} className={`rounded-md px-2 py-1 ring-1 ring-inset ${outcomeClass[outcome]}`}>
-              {outcome.replace('_', ' ')}
+              {outcomeLabel[outcome]}
             </span>
           ))}
         </div>
       </div>
 
       {monthQuery.isError ? (
-        <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-200">
+        <div className="rounded-xl border border-warning/25 bg-warning/10 p-4 text-sm text-warning">
           {getJournalErrorMessage(monthQuery.error, 'Unable to load the calendar.')}
         </div>
       ) : null}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <section className="rounded-2xl border border-white/6 bg-ink-900/80 p-4 shadow-card">
+        <section className="mm-card overflow-x-auto p-4">
           {monthQuery.isLoading ? (
             <div className="grid grid-cols-7 gap-2">
               {Array.from({ length: 35 }).map((_, index) => (
-                <div key={index} className="h-24 animate-pulse rounded-xl bg-white/5" />
+                <div key={index} className="h-24 animate-pulse rounded-xl bg-surface-hover" />
               ))}
             </div>
           ) : (
             <div className="grid grid-cols-7 gap-2">
               {WEEKDAYS.map((label) => (
-                <div key={label} className="px-1 pb-1 text-center text-xs font-medium uppercase tracking-wider text-slate-500">
+                <div key={label} className="px-1 pb-1 text-center text-xs font-medium uppercase tracking-wider text-fg-muted">
                   {label}
                 </div>
               ))}
@@ -142,21 +149,21 @@ const JournalCalendar = () => {
           )}
         </section>
 
-        <aside className="rounded-2xl border border-white/6 bg-ink-900/80 p-5 shadow-card">
+        <aside className="mm-card">
           {!selectedDate ? (
-            <p className="text-sm text-slate-500">Select a day to review the trades recorded that day.</p>
+            <p className="text-sm text-fg-muted">Select a day to review the trades recorded that day.</p>
           ) : dayQuery.isLoading ? (
             <div className="space-y-3">
-              <div className="h-8 animate-pulse rounded-lg bg-white/5" />
-              <div className="h-24 animate-pulse rounded-lg bg-white/5" />
+              <div className="h-8 animate-pulse rounded-lg bg-surface-hover" />
+              <div className="h-24 animate-pulse rounded-lg bg-surface-hover" />
             </div>
           ) : dayQuery.isError ? (
-            <p className="text-sm text-amber-200">{getJournalErrorMessage(dayQuery.error, 'Unable to load that day.')}</p>
+            <p className="text-sm text-warning">{getJournalErrorMessage(dayQuery.error, 'Unable to load that day.')}</p>
           ) : dayQuery.data ? (
             <div className="space-y-4">
               <div>
-                <h3 className="font-semibold text-white">{selectedDate}</h3>
-                <p className="mt-1 text-sm text-slate-400">
+                <h3 className="font-semibold text-fg">{selectedDate}</h3>
+                <p className="mt-1 text-sm text-fg-secondary">
                   {dayQuery.data.trades} trades · Win rate {formatMetricPercent(dayQuery.data.winRate)}
                 </p>
                 <p className={`mt-1 text-sm font-medium ${metricTone(dayQuery.data.netPnl)}`}>
@@ -164,7 +171,7 @@ const JournalCalendar = () => {
                 </p>
               </div>
               {dayQuery.data.items.length === 0 ? (
-                <p className="rounded-lg border border-dashed border-white/10 p-6 text-center text-sm text-slate-500">
+                <p className="rounded-lg border border-dashed border-line p-6 text-center text-sm text-fg-muted">
                   No trades recorded on this day.
                 </p>
               ) : (
@@ -173,12 +180,12 @@ const JournalCalendar = () => {
                     <Link
                       key={trade.id}
                       to={`/journal/trades/${trade.id}`}
-                      className="block rounded-xl border border-white/6 px-3 py-3 hover:border-violet-500/30"
+                      className="block rounded-xl border border-line px-3 py-3 hover:border-brand/30"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <div className="font-medium text-white">{trade.instrumentName}</div>
-                          <div className="text-xs text-slate-500">
+                          <div className="font-medium text-fg">{trade.instrumentName}</div>
+                          <div className="text-xs text-fg-muted">
                             {trade.displaySymbol} · {trade.direction} · {trade.status}
                           </div>
                         </div>
@@ -186,7 +193,7 @@ const JournalCalendar = () => {
                           {formatJournalAmount(trade.netPnl, trade.currency)}
                         </div>
                       </div>
-                      <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-slate-400">
+                      <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-fg-secondary">
                         <span>Entry {trade.entryPrice}</span>
                         <span>Exit {trade.exitPrice ?? '—'}</span>
                         <span>Strategy {trade.strategy || '—'}</span>
@@ -216,13 +223,18 @@ const CalendarCell = ({
   <button
     type="button"
     onClick={onSelect}
-    className={`min-h-24 rounded-xl p-2 text-left ring-1 ring-inset transition hover:ring-violet-400/40 ${
+    aria-pressed={selected}
+    aria-label={`${day.date}, ${outcomeLabel[day.outcome]}${day.trades ? `, ${day.trades} trades` : ''}`}
+    className={`min-h-[5.5rem] min-w-[3.5rem] rounded-lg p-2 text-left ring-1 ring-inset transition hover:ring-brand/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/50 ${
       outcomeClass[day.outcome]
-    } ${selected ? 'ring-violet-400/70' : ''}`}
+    } ${selected ? 'ring-2 ring-brand' : ''}`}
   >
-    <div className="text-xs font-medium">{Number(day.date.slice(8))}</div>
+    <div className="flex items-center justify-between gap-1">
+      <span className="text-xs font-medium text-fg">{Number(day.date.slice(8))}</span>
+      <span className="text-[10px] font-semibold uppercase tracking-wide">{outcomeLabel[day.outcome]}</span>
+    </div>
     {day.outcome === 'NO_TRADES' ? (
-      <div className="mt-3 text-[11px] text-slate-600">No trades</div>
+      <div className="mt-3 text-[11px] text-fg-muted">None</div>
     ) : (
       <>
         <div className="mt-2 text-sm font-semibold tabular-nums">{formatMetricNumber(day.netPnl, { signed: true })}</div>

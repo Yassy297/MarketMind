@@ -1,10 +1,13 @@
 import api from './api';
 
+import type { AppearancePreference } from '../config/appearance';
+
 export type AuthUser = {
   id: string;
   name: string;
   email: string;
   role?: string;
+  appearance?: AppearancePreference;
 };
 
 export type AuthResponse = {
@@ -42,4 +45,9 @@ export async function fetchMe(): Promise<{ user: AuthUser }> {
 
 export async function logout(): Promise<void> {
   await api.post('/auth/logout');
+}
+
+export async function updateAppearance(appearance: AppearancePreference): Promise<AuthUser> {
+  const response = await api.patch<{ user: AuthUser }>('/auth/me', { appearance });
+  return response.data.user;
 }

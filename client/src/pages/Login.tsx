@@ -40,12 +40,12 @@ const Login: React.FC = () => {
 
   return (
     <div className="w-full max-w-sm">
-      <h2 className="text-[26px] font-semibold tracking-tight text-white">Welcome back!</h2>
-      <p className="mt-1.5 text-sm text-slate-400">Sign in to continue to your account.</p>
+      <h2 className="text-page-title text-fg">Welcome back</h2>
+      <p className="mt-1.5 text-sm text-fg-secondary">Sign in to continue to your account.</p>
 
       <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
         <div className="space-y-1.5">
-          <label htmlFor="login-email" className="text-sm font-medium text-slate-300">Email address</label>
+          <label htmlFor="login-email" className="text-sm font-medium text-fg-secondary">Email address</label>
           <Input
             id="login-email"
             required
@@ -59,8 +59,8 @@ const Login: React.FC = () => {
 
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <label htmlFor="login-password" className="text-sm font-medium text-slate-300">Password</label>
-            <a href="#" className="text-xs font-medium text-violet-300 hover:text-violet-200">Forgot password?</a>
+            <label htmlFor="login-password" className="text-sm font-medium text-fg-secondary">Password</label>
+            <a href="#" className="text-xs font-medium text-brand hover:text-brand">Forgot password?</a>
           </div>
           <Input
             id="login-password"
@@ -73,16 +73,16 @@ const Login: React.FC = () => {
           />
         </div>
 
-        {error ? <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">{error}</div> : null}
+        {error ? <div className="rounded-lg border border-negative/25 bg-negative/10 px-3 py-2 text-sm text-negative">{error}</div> : null}
 
         <Button type="submit" disabled={isSubmitting} className="w-full">
           {isSubmitting ? 'Signing in…' : 'Sign in'}
         </Button>
 
-        <div className="flex items-center gap-3 text-xs uppercase tracking-wider text-slate-600">
-          <div className="h-px flex-1 bg-white/8" />
+        <div className="flex items-center gap-3 text-xs uppercase tracking-wider text-fg-muted">
+          <div className="h-px flex-1 bg-border" />
           or
-          <div className="h-px flex-1 bg-white/8" />
+          <div className="h-px flex-1 bg-border" />
         </div>
 
         <Button type="button" variant="outline" className="w-full">
@@ -90,8 +90,8 @@ const Login: React.FC = () => {
           Sign in with Google
         </Button>
 
-        <div className="pt-2 text-center text-sm text-slate-400">
-          Don't have an account? <NavLink className="font-medium text-violet-300 hover:text-violet-200" to="/auth/register">Create account</NavLink>
+        <div className="pt-2 text-center text-sm text-fg-secondary">
+          Don't have an account? <NavLink className="font-medium text-brand hover:text-brand" to="/auth/register">Create account</NavLink>
         </div>
       </form>
     </div>

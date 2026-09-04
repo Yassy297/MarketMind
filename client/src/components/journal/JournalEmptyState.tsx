@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { BookOpen, Plus } from 'lucide-react';
 import Button from '../ui/button';
+import EmptyState from '../ui/EmptyState';
 
 const JournalEmptyState = ({
   title = "You haven't recorded any trades yet.",
@@ -9,15 +10,20 @@ const JournalEmptyState = ({
   title?: string;
   description?: string;
 }) => (
-  <div className="rounded-2xl border border-dashed border-white/10 bg-ink-900/50 px-6 py-12 text-center">
-    <p className="text-base font-medium text-white">{title}</p>
-    <p className="mt-2 text-sm text-slate-400">{description}</p>
-    <Link to="/journal/trades/new" className="mt-5 inline-flex">
-      <Button size="sm">
-        <Plus className="h-4 w-4" />
-        Add your first trade
-      </Button>
-    </Link>
+  <div className="rounded-xl border border-dashed border-line bg-background-secondary">
+    <EmptyState
+      icon={BookOpen}
+      title={title}
+      description={description}
+      action={
+        <Link to="/journal/trades/new">
+          <Button size="sm">
+            <Plus className="h-4 w-4" />
+            Add your first trade
+          </Button>
+        </Link>
+      }
+    />
   </div>
 );
 

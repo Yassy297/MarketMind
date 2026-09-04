@@ -23,16 +23,16 @@ const NewsCard: React.FC<NewsCardProps> = ({
       href={url}
       target="_blank"
       rel="noreferrer"
-      className="group flex gap-3 rounded-xl border border-white/6 bg-white/[0.02] p-4 transition hover:border-violet-500/40 hover:bg-white/[0.04]"
+      className="group flex gap-3 rounded-xl border border-line bg-surface-hover p-4 transition hover:border-brand/40 hover:bg-surface-hover"
     >
       <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-500/15 text-indigo-300">
         <Newspaper className="h-4 w-4" />
       </div>
       <div className="min-w-0">
-        <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">{source}</div>
-        <div className="mt-1 font-medium text-white group-hover:text-violet-200">{headline}</div>
-        {summary ? <div className="mt-1.5 line-clamp-2 text-sm text-slate-400">{summary}</div> : null}
-        <div className="mt-2 flex flex-wrap gap-x-3 text-xs text-slate-600">
+        <div className="text-xs font-semibold uppercase tracking-wider text-fg-muted">{source}</div>
+        <div className="mt-1 font-medium text-fg group-hover:text-brand">{headline}</div>
+        {summary ? <div className="mt-1.5 line-clamp-2 text-sm text-fg-secondary">{summary}</div> : null}
+        <div className="mt-2 flex flex-wrap gap-x-3 text-xs text-fg-muted">
           <span>{datetime}</span>
           {company ? <span>{company}</span> : null}
         </div>

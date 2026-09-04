@@ -52,12 +52,12 @@ const Register: React.FC = () => {
 
   return (
     <div className="w-full max-w-sm">
-      <h2 className="text-[26px] font-semibold tracking-tight text-white">Create an account</h2>
-      <p className="mt-1.5 text-sm text-slate-400">Start your journey with MarketMind.</p>
+      <h2 className="text-[26px] font-semibold tracking-tight text-fg">Create an account</h2>
+      <p className="mt-1.5 text-sm text-fg-secondary">Start your journey with MarketMind.</p>
 
       <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
         <div className="space-y-1.5">
-          <label htmlFor="register-name" className="text-sm font-medium text-slate-300">Full name</label>
+          <label htmlFor="register-name" className="text-sm font-medium text-fg-secondary">Full name</label>
           <Input
             id="register-name"
             required
@@ -69,7 +69,7 @@ const Register: React.FC = () => {
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="register-email" className="text-sm font-medium text-slate-300">Email address</label>
+          <label htmlFor="register-email" className="text-sm font-medium text-fg-secondary">Email address</label>
           <Input
             id="register-email"
             required
@@ -82,7 +82,7 @@ const Register: React.FC = () => {
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="register-password" className="text-sm font-medium text-slate-300">Password</label>
+          <label htmlFor="register-password" className="text-sm font-medium text-fg-secondary">Password</label>
           <Input
             id="register-password"
             required
@@ -96,7 +96,7 @@ const Register: React.FC = () => {
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="register-confirm-password" className="text-sm font-medium text-slate-300">Confirm password</label>
+          <label htmlFor="register-confirm-password" className="text-sm font-medium text-fg-secondary">Confirm password</label>
           <Input
             id="register-confirm-password"
             required
@@ -115,20 +115,20 @@ const Register: React.FC = () => {
             type="checkbox"
             checked={acceptedTerms}
             onChange={(event) => setAcceptedTerms(event.target.checked)}
-            className="mt-0.5 h-4 w-4 rounded border-white/15 bg-ink-900 text-violet-500 focus:ring-violet-500"
+            className="mt-0.5 h-4 w-4 rounded border-line bg-background text-brand focus:ring-focus"
           />
-          <label htmlFor="terms" className="text-sm text-slate-400">
-            I agree to the <span className="text-slate-300">Terms of Service</span> and <span className="text-slate-300">Privacy Policy</span>.
+          <label htmlFor="terms" className="text-sm text-fg-secondary">
+            I agree to the <span className="text-fg-secondary">Terms of Service</span> and <span className="text-fg-secondary">Privacy Policy</span>.
           </label>
         </div>
 
-        {error ? <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">{error}</div> : null}
+        {error ? <div className="rounded-lg border border-negative/25 bg-negative/10 px-3 py-2 text-sm text-negative">{error}</div> : null}
 
         <Button type="submit" disabled={isSubmitting} className="w-full">
           {isSubmitting ? 'Creating account…' : 'Create account'}
         </Button>
 
-        <div className="flex items-center gap-3 text-xs uppercase tracking-wider text-slate-600">
+        <div className="flex items-center gap-3 text-xs uppercase tracking-wider text-fg-muted">
           <div className="h-px flex-1 bg-white/8" />
           or
           <div className="h-px flex-1 bg-white/8" />
@@ -139,8 +139,8 @@ const Register: React.FC = () => {
           Sign up with Google
         </Button>
 
-        <div className="pt-2 text-center text-sm text-slate-400">
-          Already have an account? <NavLink className="font-medium text-violet-300 hover:text-violet-200" to="/auth/login">Sign in</NavLink>
+        <div className="pt-2 text-center text-sm text-fg-secondary">
+          Already have an account? <NavLink className="font-medium text-brand hover:text-brand" to="/auth/login">Sign in</NavLink>
         </div>
       </form>
     </div>
