@@ -849,6 +849,64 @@ Returns:
 }
 ```
 
+## Watchlist System
+
+**Status: ✅ BACKEND MULTI-WATCHLIST CRUD IMPLEMENTED; FRONTEND INTEGRATION NOT YET IMPLEMENTED**
+
+MarketMind supports many user-owned watchlists, with many instrument memberships in each list. The same canonical instrument may be a member of multiple watchlists, but it cannot be added twice to the same watchlist.
+
+### Architecture and ownership
+
+Watchlists use the existing MongoDB/Mongoose layer and cookie/JWT authentication. A watchlist is the parent document and stores its items as embedded subdocuments. This keeps item insertion, deletion, and ordering atomic without introducing a second database or a new relational structure.
+
+Every watchlist query is scoped by the authenticated `req.user.id`. The API never accepts a client-supplied user ID. A watchlist or item belonging to another user is treated as not found, preventing cross-user access and IDOR vulnerabilities.
+
+### Schema
+
+`server/src/models/Watchlist.ts` stores:
+
+- Watchlist: `_id`, `userId`, `name`, `normalizedName`, optional `description`, `sortOrder`, `createdAt`, and `updatedAt`
+- Item: embedded `_id`, `identityKey`, optional generic `instrumentId` / `instrumentKey` / `provider`, `symbol`, `displaySymbol`, `companyName`, optional `market`, `exchange`, `countryCode`, `currency`, and `isin`, plus `sortOrder` and `addedAt`
+
+The existing legacy `symbols` field remains readable so older single-list documents are not silently lost. Legacy symbols are exposed as compatibility items with limited metadata; newly created items use the full canonical identity snapshot. No migration is required.
+
+### Canonical instrument identity and duplicates
+
+Watchlists do not store raw provider response objects or depend directly on Upstox/Finnhub. `identityKey` is generated from the strongest available stable identity (ISIN, generic instrument ID, provider instrument key, or symbol), while retaining normalized market and exchange context. For example, `TSLA` on two exchanges or in two markets remains distinct.
+
+Duplicate detection is performed using `identityKey`. The service checks existing items and uses an atomic MongoDB update predicate when adding an item, so concurrent requests cannot append the same identity to one list. Watchlist names are trimmed, normalized, and unique per user through both application validation and a sparse `{ userId, normalizedName }` unique index. Names are not globally unique.
+
+### Ordering and activity
+
+Watchlists and items use non-negative integer `sortOrder`. New items append after the current last item; deleting an item does not trigger a full reindex. Item reordering only updates an item scoped to the authenticated user's watchlist.
+
+The existing `Activity` model is suitable for watchlist events, so no new activity architecture was added. The backend records watchlist creation, rename, deletion, item addition, and item removal. Activity failures are logged without failing the primary watchlist operation.
+
+### API endpoints
+
+All endpoints require the existing `requireAuth` middleware:
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/watchlists` | List the authenticated user's watchlists with item counts |
+| POST | `/api/watchlists` | Create a watchlist (`name`, optional `description`, optional `sortOrder`) |
+| PATCH | `/api/watchlists/:watchlistId` | Update `name`, `description`, and/or `sortOrder` |
+| DELETE | `/api/watchlists/:watchlistId` | Delete a user-owned watchlist and its embedded items |
+| GET | `/api/watchlists/:watchlistId/items` | List items for a user-owned watchlist |
+| POST | `/api/watchlists/:watchlistId/items` | Add a canonical instrument snapshot |
+| PATCH | `/api/watchlists/:watchlistId/items/:itemId` | Update an item's `sortOrder` |
+| DELETE | `/api/watchlists/:watchlistId/items/:itemId` | Remove an item from a user-owned watchlist |
+
+List responses use normalized API DTOs. `GET /api/watchlists` returns `{ watchlists: [...] }` with `id`, `name`, `description`, `itemCount`, `sortOrder`, `createdAt`, and `updatedAt`. Item responses include `id`, `identityKey`, canonical metadata, `sortOrder`, and `addedAt`.
+
+### Validation and errors
+
+Validation uses the existing Zod dependency. Watchlist names are required, trimmed, non-empty, and limited to 80 characters; descriptions are limited to 500 characters. Item symbols, display symbols, and company names are required, supported market/currency values are checked against the existing registries, and item ordering must be a non-negative integer. Malformed IDs return `400`, missing user-owned resources return `404`, duplicate names/items return `409`, and invalid bodies return `422`. Database details and stack traces are not returned by watchlist controllers.
+
+### Dashboard interaction and remaining frontend work
+
+The existing dashboard `watchlistCount` contract is preserved, but it now counts unique tracked instrument identities across the user's watchlists, matching the existing “Tracked companies” label. Watchlist CRUD is backend-only in this phase. The existing Watchlist page, stock detail actions, live market-data table, sorting/filtering controls, and full frontend integration remain not yet implemented.
+
 ## Trade Journal
 
 **Status: ✅ IMPLEMENTED (recording, review, dashboard, calendar, analytics, and reports)**
@@ -1069,7 +1127,7 @@ Options: **System** (default), **Light**, **Dark**.
 
 The existing `client/public/marketmind-logo.svg` is used as the favicon (`client/index.html`) and as in-app brand mark (sidebar, auth layout, market transition loader). The artwork was not redesigned.
 
-Watchlist multi-list functionality is **not** implemented. The Watchlist page is a design-system foundation only.
+Watchlist multi-list backend CRUD is **implemented**. The Watchlist page is still a design-system foundation only; frontend integration and live watchlist market data are not implemented.
 
 ## Root Structure
 
@@ -1173,6 +1231,7 @@ server/
       stock.controller.ts     # Stock endpoints (search, profile, quote, news, etc.)
       dashboard.controller.ts # Dashboard summary
       journal.controller.ts   # Trade journal CRUD, list, stats, overview, calendar, analytics
+      watchlist.controller.ts # Authenticated multi-watchlist CRUD handlers
     middleware/
       requireAuth.ts          # JWT verification and cookie extraction
       errorHandler.ts         # Error response formatting
@@ -1180,7 +1239,7 @@ server/
     models/
       User.ts                 # User schema (email, password hash, preferences)
       RecentlyViewed.ts       # Recently viewed stock tracking per user
-      Watchlist.ts            # (scaffolded - model only, no endpoints)
+      Watchlist.ts            # Multi-watchlist parent and embedded canonical items
       JournalTrade.ts         # Universal trade-journal entry (one model for all asset classes)
       Document.ts             # (scaffolded)
       Conversation.ts         # (scaffolded)
@@ -1190,6 +1249,7 @@ server/
       dashboard.routes.ts     # /api/dashboard
       market-context.routes.ts # /api/market/context
       journal.routes.ts       # /api/journal/*
+      watchlist.routes.ts     # /api/watchlists/*
     services/
       auth.service.ts         # Credential validation, token generation, refresh logic
       stock.service.ts        # Aggregates market data and records views
@@ -1204,6 +1264,7 @@ server/
         journal.query.ts      # List filters, escaped search, pagination
         journal.duration.ts   # Derived holding duration labels
         journal.presets.ts    # Custom vs predefined string resolution
+      watchlist.service.ts    # User-scoped watchlist and embedded item business logic
       market-data/
         marketData.service.ts # High-level API (search, profile, quote, news, recommendation)
         marketData.providerResolver.ts # Selects best provider by market
@@ -1228,6 +1289,7 @@ server/
       journal.ts              # Journal asset classes, input/record types
     validators/
       journal.validators.ts   # Zod schemas for create, update, list, calendar, analytics
+      watchlist.validators.ts # Zod schemas for watchlist and item CRUD
     utils/
       jwt.ts                  # Token encode/decode utilities
       password.ts             # bcryptjs hashing utilities
@@ -1496,12 +1558,13 @@ npm run lint          # Lint both workspaces
    - ❌ Missing: Options/derivatives data
    - Future: Add providers for news, recommendations, and historical prices
 
-2. **Watchlist Model**: Database schema exists; backend endpoints and frontend UI not implemented.
-   - ✅ Done: Watchlist model defined in `server/src/models/Watchlist.ts`
-   - ❌ Missing: REST API endpoints (GET, POST, DELETE)
+2. **Watchlist Backend**: Multi-watchlist database schema and backend endpoints are implemented; frontend UI integration remains pending.
+   - ✅ Done: Multi-watchlist model, canonical embedded items, ownership scoping, validation, and REST CRUD endpoints
+   - ✅ Done: Duplicate name/item prevention and dashboard unique tracked-instrument count
    - ❌ Missing: Frontend UI for add/remove/view
    - ❌ Missing: Integration with stock detail pages
-   - Future: Implement full CRUD operations and frontend components
+   - ❌ Missing: Live market-data watchlist table
+   - Future: Implement frontend components and live watchlist data
 
 ### Not Yet Implemented
 
@@ -1620,6 +1683,13 @@ npm run lint          # Lint both workspaces
 - Journal UI: Overview dashboard, Trades, Calendar, Reports, Add/Edit, Detail; Sidebar Journal item
 - Reuses existing stock search and market/currency context; historical amounts stay in transaction currency
 
+**Watchlists:**
+- Multi-watchlist backend foundation with user-owned CRUD under `/api/watchlists`
+- Embedded canonical instrument snapshots with stable ordering and per-list duplicate prevention
+- User-scoped authorization, Zod validation, clean conflict/not-found errors, and existing Activity event logging
+- Dashboard `watchlistCount` counts unique tracked instruments across the user's watchlists
+- Frontend watchlist integration, stock detail actions, and live market-data table remain not yet implemented
+
 **Currency Conversion:**
 - Centralized display-currency conversion via Frankfurter reference rates
 - 6-hour cache with intelligent request deduplication
@@ -1641,8 +1711,9 @@ npm run lint          # Lint both workspaces
 **Watchlist:**
 - ✅ Model defined and database schema ready
 - ✅ Watchlist page polished to the design system as a visual foundation
-- ❌ API endpoints not implemented
-- ❌ Multi-watchlist functionality not implemented
+- ✅ Backend multi-watchlist CRUD, item ordering, canonical identity, authorization, and duplicate prevention
+- ❌ Frontend API integration and add/remove/view controls not implemented
+- ❌ Live market-data watchlist table not implemented
 
 ### Prepared
 
@@ -1681,6 +1752,14 @@ npm run lint          # Lint both workspaces
 - Frontend and backend ESLint: passed
 - Server unit tests via `npm test`: 66 passed, including appearance validation
 - Theme changes are isolated from MarketContext; Watchlist remains a UI foundation only
+
+### Verification performed (4 September 2026 — Multi-watchlist backend foundation)
+
+- Backend TypeScript compile: passed
+- Backend ESLint: passed with the existing `.eslintrc.cjs` compatibility mode; ESLint emitted only its legacy configuration deprecation notice
+- Server unit tests via `npm test`: 84 passed, including watchlist authentication, ownership scoping, create/list/update/delete, item add/list/remove/reorder, identity, validation, and duplicate prevention
+- Frontend TypeScript check, Vite production build, and ESLint: passed
+- No frontend watchlist integration or live market-data table was added in this backend-only phase
 
 ### Verification performed (31 August 2026 — Trade Journal dashboard, calendar, analytics)
 

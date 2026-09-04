@@ -5,6 +5,7 @@ import { RecentlyViewed } from '../models/RecentlyViewed';
 import { Watchlist } from '../models/Watchlist';
 import { Types } from 'mongoose';
 import type { CountryCode, CurrencyCode, MarketCode } from '../types/market';
+import { buildInstrumentIdentityKey } from './watchlist.service';
 
 export type DashboardSummary = {
   documentsCount: number;
@@ -33,13 +34,23 @@ class DashboardService {
   async getSummaryForUser(userId: string): Promise<DashboardSummary> {
     const userObjectId = new Types.ObjectId(userId);
 
-    const [documentsCount, watchlistCount, conversationsCount, recentActivity, recentCompanies] = await Promise.all([
+    const [documentsCount, watchlists, conversationsCount, recentActivity, recentCompanies] = await Promise.all([
       Document.countDocuments({ userId: userObjectId }),
-      Watchlist.countDocuments({ userId: userObjectId }),
+      Watchlist.find({ userId: userObjectId }).select('items symbols').lean(),
       Conversation.countDocuments({ userId: userObjectId }),
       Activity.find({ userId: userObjectId }).sort({ createdAt: -1 }).limit(6).lean(),
       RecentlyViewed.find({ user: userObjectId }).sort({ viewedAt: -1 }).limit(5).lean()
     ]);
+    const trackedInstrumentKeys = new Set<string>();
+    for (const watchlist of watchlists) {
+      for (const item of watchlist.items ?? []) {
+        trackedInstrumentKeys.add(item.identityKey);
+      }
+      for (const symbol of watchlist.symbols ?? []) {
+        trackedInstrumentKeys.add(buildInstrumentIdentityKey({ symbol }));
+      }
+    }
+    const watchlistCount = trackedInstrumentKeys.size;
 
     const recentlyViewedCompanies = recentCompanies.map((item) => ({
       symbol: item.symbol,

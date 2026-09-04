@@ -1,0 +1,749 @@
+You are now implementing the BACKEND FOUNDATION of the MarketMind MULTI-WATCHLIST feature.
+
+This is an existing application.
+
+IMPORTANT:
+Do NOT rebuild the application.
+Do NOT replace the architecture.
+Do NOT introduce a new framework.
+Do NOT introduce a new database.
+Do NOT replace the existing authentication system.
+Do NOT modify the market-data provider architecture.
+Do NOT modify MarketContext.
+Do NOT modify currency conversion.
+Do NOT modify stock-provider selection.
+Do NOT break RecentlyViewed.
+Do NOT break Dashboard.
+Do NOT implement portfolio/trading/buy/sell functionality.
+
+We are implementing WATCHLISTS only.
+
+The goal is to build a production-quality backend foundation that supports MULTIPLE user-owned watchlists.
+
+============================================================
+1. READ THE CODEBASE FIRST
+============================================================
+
+Before writing code inspect:
+
+- PROJECT_DOCUMENTATION.md
+- README.md
+- server/src/models/Watchlist.ts
+- server/src/models/User.ts
+- server/src/models/RecentlyViewed.ts
+- server/src/models/Activity.ts
+- server/src/services/
+- server/src/controllers/
+- server/src/routes/
+- server/src/validators/
+- server/src/middleware/
+- server/src/types/
+- existing stock services
+- existing dashboard service
+- existing authentication middleware
+- existing error handling
+- existing validation patterns
+- existing tests
+
+Understand the existing conventions before implementing anything.
+
+Do NOT blindly replace Watchlist.ts.
+
+If the existing model is insufficient for multiple watchlists, evolve it carefully.
+
+============================================================
+2. PRODUCT SCOPE
+============================================================
+
+MarketMind must support:
+
+ONE USER
+    ↓
+MANY WATCHLISTS
+    ↓
+MANY INSTRUMENTS PER WATCHLIST
+
+Example:
+
+User
+ ├── Long Term
+ │    ├── HDFCBANK
+ │    ├── RELIANCE
+ │    └── AAPL
+ │
+ ├── AI Stocks
+ │    ├── NVDA
+ │    ├── AMD
+ │    └── TSM
+ │
+ └── Swing Trades
+      ├── TSLA
+      └── HDFCBANK
+
+The SAME instrument may exist in multiple watchlists.
+
+Example:
+
+HDFCBANK can exist in:
+
+Long Term
+India Stocks
+Swing Trades
+
+These are independent memberships.
+
+============================================================
+3. WATCHLIST DATA MODEL
+============================================================
+
+Design the model based on the existing Watchlist.ts and current architecture.
+
+Do NOT unnecessarily create a complicated relational structure.
+
+The data model must support:
+
+Watchlist:
+
+- _id
+- userId
+- name
+- description (optional)
+- sortOrder
+- createdAt
+- updatedAt
+
+Watchlist membership/item:
+
+- watchlistId
+- canonical instrument identity
+- symbol/display symbol
+- company name
+- market
+- exchange where available
+- provider instrument identifier where available
+- sortOrder
+- addedAt
+
+IMPORTANT:
+
+Do not use only the raw symbol as the global identity.
+
+The same symbol can exist in different markets.
+
+For example:
+
+TSLA
+TSLA on one exchange
+TSLA on another exchange
+
+must not accidentally be treated as the same instrument if the normalized instrument identity distinguishes them.
+
+Reuse the existing MarketMind normalized instrument identity conventions.
+
+Inspect marketData.types.ts and instrumentSearch.service.ts before deciding the exact fields.
+
+Do not duplicate provider-specific response objects into Watchlist.
+
+Watchlist stores canonical identity/metadata required to resolve the instrument later.
+
+============================================================
+4. ARCHITECTURAL PRINCIPLE
+============================================================
+
+Watchlist persistence must be provider-agnostic.
+
+BAD:
+
+Watchlist directly depends on Upstox API.
+
+BAD:
+
+Watchlist directly depends on Finnhub API.
+
+BAD:
+
+Watchlist stores raw provider response.
+
+GOOD:
+
+Watchlist stores canonical MarketMind instrument identity.
+
+When live data is needed later:
+
+Watchlist
+    ↓
+Stock/Market Data Service
+    ↓
+Provider Resolver
+    ↓
+Upstox / Finnhub / future provider
+    ↓
+Normalized MarketMind data
+
+This keeps the Watchlist independent from provider changes.
+
+============================================================
+5. OWNERSHIP / SECURITY
+============================================================
+
+Every watchlist belongs to exactly one authenticated user.
+
+Every API endpoint must use the existing authentication middleware.
+
+NEVER accept userId from the frontend as an authoritative ownership value.
+
+Always use the authenticated user's ID.
+
+Example:
+
+req.user.id
+
+or whatever the existing middleware exposes.
+
+Every query must be scoped by userId.
+
+A user must NEVER be able to:
+
+- read another user's watchlist
+- modify another user's watchlist
+- delete another user's watchlist
+- add items to another user's watchlist
+- remove items from another user's watchlist
+
+Avoid IDOR vulnerabilities.
+
+============================================================
+6. WATCHLIST CRUD
+============================================================
+
+Implement REST endpoints following the existing API conventions.
+
+Recommended API:
+
+GET
+/api/watchlists
+
+Returns all watchlists belonging to the authenticated user.
+
+POST
+/api/watchlists
+
+Create a watchlist.
+
+PATCH
+/api/watchlists/:watchlistId
+
+Update:
+
+- name
+- description
+- sortOrder if appropriate
+
+DELETE
+/api/watchlists/:watchlistId
+
+Delete a watchlist.
+
+============================================================
+7. WATCHLIST ITEM ENDPOINTS
+============================================================
+
+Implement:
+
+GET
+/api/watchlists/:watchlistId/items
+
+POST
+/api/watchlists/:watchlistId/items
+
+DELETE
+/api/watchlists/:watchlistId/items/:itemId
+
+PATCH
+/api/watchlists/:watchlistId/items/:itemId
+
+PATCH should support ordering and future-safe item metadata without requiring a redesign.
+
+At minimum support:
+
+sortOrder
+
+Do not implement unnecessary item editing functionality.
+
+============================================================
+8. DUPLICATE PREVENTION
+============================================================
+
+A watchlist must not contain the same canonical instrument twice.
+
+Duplicate detection must be based on canonical instrument identity.
+
+NOT:
+
+symbol only.
+
+Example:
+
+HDFCBANK + IN
+must be distinguishable from:
+
+HDFCBANK + another market
+
+Use the existing normalized market/instrument identity conventions.
+
+Prefer a MongoDB unique compound index where practical.
+
+Also perform application-level validation so the API returns a clean conflict response rather than a raw MongoDB duplicate-key error.
+
+============================================================
+9. WATCHLIST NAME RULES
+============================================================
+
+Validate:
+
+- name required
+- trim whitespace
+- reasonable maximum length
+- reject empty names
+- prevent accidental whitespace-only names
+
+Decide whether duplicate watchlist names should be allowed.
+
+Preferred:
+
+Allow duplicate names only if the architecture makes that useful.
+
+However, strongly consider preventing duplicate names per user because it creates poor UX.
+
+If preventing duplicates, enforce it safely at the database level with a compound userId + normalizedName field/index.
+
+Do NOT make names globally unique.
+
+User A can have:
+
+Long Term
+
+and User B can also have:
+
+Long Term
+
+============================================================
+10. ITEM ORDERING
+============================================================
+
+Support stable ordering.
+
+Use sortOrder.
+
+When adding a new item:
+
+append it to the end.
+
+When deleting an item:
+
+do not require expensive full reindexing unless necessary.
+
+When reordering:
+
+validate that the item belongs to the requested user's watchlist.
+
+Do not trust frontend order blindly.
+
+============================================================
+11. API RESPONSE CONTRACT
+============================================================
+
+Create clean normalized API responses.
+
+Example:
+
+GET /api/watchlists
+
+{
+  "watchlists": [
+    {
+      "id": "...",
+      "name": "Long Term",
+      "description": "...",
+      "itemCount": 5,
+      "sortOrder": 0,
+      "createdAt": "...",
+      "updatedAt": "..."
+    }
+  ]
+}
+
+GET /api/watchlists/:id/items
+
+{
+  "watchlist": {
+    "id": "...",
+    "name": "Long Term"
+  },
+  "items": [
+    {
+      "id": "...",
+      "symbol": "HDFCBANK",
+      "displaySymbol": "HDFCBANK",
+      "companyName": "HDFC Bank Ltd",
+      "market": "IN",
+      "exchange": "NSE",
+      "sortOrder": 0,
+      "addedAt": "..."
+    }
+  ]
+}
+
+Adapt these contracts to existing project conventions.
+
+Do not blindly copy this JSON.
+
+============================================================
+12. VALIDATION
+============================================================
+
+Use the existing validation library/pattern.
+
+Do not introduce another validation library.
+
+Validate:
+
+Create watchlist
+Update watchlist
+Add item
+Reorder item
+
+Reject malformed IDs if existing project conventions support this.
+
+Return clean 4xx responses.
+
+============================================================
+13. ERROR HANDLING
+============================================================
+
+Use existing centralized error handling.
+
+Do not return stack traces.
+
+Use appropriate status codes.
+
+Examples:
+
+401
+Unauthenticated
+
+403
+Forbidden if applicable
+
+404
+Watchlist/item not found for the authenticated user
+
+409
+Duplicate watchlist item
+
+400
+Invalid input
+
+Do not expose database implementation details.
+
+============================================================
+14. SERVICE LAYER
+============================================================
+
+Do not put all business logic inside controllers.
+
+Use:
+
+controller
+    ↓
+watchlist service
+    ↓
+model
+
+Create a dedicated watchlist service following existing service patterns.
+
+The service should handle:
+
+- createWatchlist
+- listWatchlists
+- getWatchlist
+- updateWatchlist
+- deleteWatchlist
+- addItem
+- listItems
+- removeItem
+- updateItem
+
+Keep controllers thin.
+
+============================================================
+15. TRANSACTIONS / DATA CONSISTENCY
+============================================================
+
+Inspect whether the current MongoDB setup supports transactions in the development environment.
+
+Do not introduce transactions unnecessarily.
+
+If creating/deleting embedded items can be handled atomically by MongoDB update operations, prefer that.
+
+If the existing Watchlist model uses embedded items, preserve that architecture if it is sound.
+
+If the current model uses separate item documents, preserve that pattern if sound.
+
+Do not migrate the entire database unless absolutely necessary.
+
+If a schema migration is required, implement it safely and document it.
+
+============================================================
+16. DASHBOARD COUNT
+============================================================
+
+The existing Dashboard has a Watchlist count.
+
+Determine what it currently counts.
+
+The intended product behavior is:
+
+Watchlist count = number of watchlists OR number of tracked instruments?
+
+Do NOT guess silently.
+
+Inspect the existing dashboard contract and documentation.
+
+If current UI says "Tracked companies", preserve that semantic.
+
+Prefer:
+
+tracked companies = unique tracked instruments across user's watchlists
+
+if this can be implemented without breaking the existing dashboard contract.
+
+Otherwise preserve current behavior and document it.
+
+Do NOT break Dashboard.
+
+============================================================
+17. ACTIVITY
+============================================================
+
+If the existing Activity system is suitable, consider recording watchlist events:
+
+- watchlist created
+- stock added
+- stock removed
+- watchlist renamed
+- watchlist deleted
+
+Do NOT create an entirely new activity architecture.
+
+If Activity is not currently suitable, do not force it into this task.
+
+Document the decision.
+
+============================================================
+18. RATE LIMITING
+============================================================
+
+Do not add aggressive rate limits that make normal usage painful.
+
+Follow existing API protection conventions.
+
+Watchlist write endpoints should be protected against obvious abuse if the project already has API rate limiting infrastructure.
+
+Do not create a new rate-limiting architecture.
+
+============================================================
+19. TESTS
+============================================================
+
+Add backend tests.
+
+Minimum scenarios:
+
+Authentication:
+
+1. unauthenticated request rejected
+
+Ownership:
+
+2. user can only see own watchlists
+3. user cannot access another user's watchlist
+4. user cannot modify another user's watchlist
+
+CRUD:
+
+5. create watchlist
+6. list watchlists
+7. update watchlist
+8. delete watchlist
+
+Items:
+
+9. add instrument
+10. list instruments
+11. remove instrument
+12. reorder instrument
+
+Duplicate:
+
+13. same instrument cannot be added twice to same watchlist
+
+Cross-watchlist:
+
+14. same instrument can be added to multiple watchlists
+
+Validation:
+
+15. empty watchlist name rejected
+16. invalid item payload rejected
+
+Regression:
+
+17. existing test suite continues passing
+
+Use the project's existing test framework and conventions.
+
+============================================================
+20. DO NOT IMPLEMENT FRONTEND YET
+============================================================
+
+Do NOT build the complete Watchlist UI in this task.
+
+Do NOT modify the Stocks page UI yet.
+
+Do NOT add the star button yet.
+
+Do NOT implement live watchlist market data yet.
+
+Do NOT implement sorting/filtering UI yet.
+
+Do NOT implement alerts.
+
+Do NOT implement AI.
+
+This task is the backend foundation.
+
+============================================================
+21. DOCUMENTATION — MANDATORY
+============================================================
+
+Update:
+
+PROJECT_DOCUMENTATION.md
+
+Do NOT create another documentation file.
+
+Document:
+
+### Watchlist System
+
+- multi-watchlist architecture
+- ownership model
+- watchlist schema
+- item/canonical instrument identity
+- duplicate prevention
+- ordering
+- API endpoints
+- validation
+- authorization
+- error handling
+- dashboard interaction
+- activity decision if applicable
+
+Update:
+
+### Server Structure
+
+Add all new watchlist files.
+
+Update:
+
+### API Reference
+
+Document every new endpoint.
+
+Update:
+
+### Known Gaps & Future Work
+
+Remove "Watchlist backend not implemented".
+
+Clearly mark:
+
+Backend multi-watchlist CRUD = IMPLEMENTED
+
+Frontend integration = NOT YET IMPLEMENTED
+
+Live market-data watchlist table = NOT YET IMPLEMENTED
+
+Do not falsely mark the whole Watchlist feature complete.
+
+============================================================
+22. CODE QUALITY
+============================================================
+
+Follow existing naming conventions.
+
+Avoid duplicate utilities.
+
+Avoid unnecessary abstractions.
+
+Avoid giant controllers.
+
+Avoid giant services.
+
+Use strong TypeScript types.
+
+No any unless absolutely unavoidable.
+
+No provider-specific watchlist logic.
+
+No hardcoded user IDs.
+
+No secrets.
+
+============================================================
+23. FINAL VERIFICATION
+============================================================
+
+Run:
+
+- TypeScript compilation
+- ESLint
+- backend test suite
+- any relevant integration tests
+
+Verify existing features:
+
+- login
+- dashboard
+- stocks
+- journal
+- settings
+- theme
+- market context
+
+remain functional.
+
+============================================================
+24. FINAL RESPONSE
+============================================================
+
+At the end provide:
+
+1. Files created
+2. Files modified
+3. Database/model changes
+4. API endpoints
+5. Authorization strategy
+6. Duplicate prevention strategy
+7. Instrument identity strategy
+8. Tests added
+9. Test/build/lint results
+10. Documentation updates
+11. Any migration required
+12. Any remaining frontend work
+
+STOP after completing the backend foundation.
+
+Do not continue into frontend implementation automatically.

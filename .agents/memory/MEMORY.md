@@ -1,0 +1,1 @@
+- [ESLint compatibility](eslint-compatibility.md) — use legacy-config mode while the project still relies on `.eslintrc.cjs`.

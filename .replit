@@ -5,3 +5,4 @@ channel = "stable-25_05"
 
 [agent]
 expertMode = true
+run = "(cd server && npm start) & (cd client && npm start)"
