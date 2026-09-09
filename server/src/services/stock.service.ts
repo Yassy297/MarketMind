@@ -21,6 +21,16 @@ import type {
   ShareholdingResearch
 } from './market-data/marketData.types';
 
+export class RecentlyViewedError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string
+  ) {
+    super(message);
+    this.name = 'RecentlyViewedError';
+  }
+}
+
 export type StockSnapshot = {
   symbol: string;
   market?: MarketRequestContext['market'];
@@ -178,6 +188,22 @@ class StockService {
       isin: item.isin,
       viewedAt: item.viewedAt.toString()
     }));
+  }
+
+  async deleteRecentlyViewed(userId: string, symbol: string): Promise<void> {
+    const normalizedSymbol = symbol.trim().toUpperCase();
+    if (!normalizedSymbol) {
+      throw new RecentlyViewedError(404, 'Recently viewed stock not found.');
+    }
+
+    const deleted = await RecentlyViewed.findOneAndDelete({
+      user: new Types.ObjectId(userId),
+      symbol: normalizedSymbol
+    });
+
+    if (!deleted) {
+      throw new RecentlyViewedError(404, 'Recently viewed stock not found.');
+    }
   }
 }
 

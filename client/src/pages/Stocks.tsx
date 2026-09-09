@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Newspaper } from 'lucide-react';
+import { Newspaper, Trash2 } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { useMarketContext } from '../context/MarketContext';
 import PageHeader from '../components/PageHeader';
@@ -26,7 +27,9 @@ import {
   fetchStockQuote,
   fetchStockShareholding,
   fetchStockStatements,
+  deleteRecentlyViewed,
   getStockErrorMessage,
+  invalidateRecentlyViewedQueries,
   searchStocks
 } from '../services/stock.service';
 import {
@@ -42,6 +45,7 @@ const normalizeSymbol = (symbol: string | null) => symbol?.trim().toUpperCase() 
 
 const Stocks: React.FC = () => {
   const { market: preferredMarket, currency } = useMarketContext();
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const marketFromUrl = searchParams.get('market');
   const hasMarketOverride = searchParams.has('market');
@@ -111,6 +115,22 @@ const Stocks: React.FC = () => {
     queryKey: ['recently-viewed'],
     queryFn: fetchRecentlyViewed,
     retry: false
+  });
+  const [removingSymbol, setRemovingSymbol] = useState<string | null>(null);
+  const [recentlyViewedDeleteError, setRecentlyViewedDeleteError] = useState<string | null>(null);
+  const deleteRecentlyViewedMutation = useMutation({
+    mutationFn: deleteRecentlyViewed,
+    onMutate: (symbol) => {
+      setRemovingSymbol(symbol);
+      setRecentlyViewedDeleteError(null);
+    },
+    onSuccess: () => invalidateRecentlyViewedQueries(queryClient),
+    onError: (mutationError) => {
+      setRecentlyViewedDeleteError(
+        getStockErrorMessage(mutationError, 'Unable to remove recently viewed stock.')
+      );
+    },
+    onSettled: () => setRemovingSymbol(null)
   });
 
   const isIndianStock =
@@ -442,6 +462,11 @@ const Stocks: React.FC = () => {
                 Unable to load recently viewed companies.
               </div>
             )}
+            {recentlyViewedDeleteError ? (
+              <div className="mb-2 rounded-lg border border-negative/25 bg-negative/10 p-3 text-sm text-negative" role="alert">
+                {recentlyViewedDeleteError}
+              </div>
+            ) : null}
             {!recentlyViewedQuery.isLoading && !recentlyViewedQuery.isError && (
               <div className="space-y-2">
                 {(recentlyViewedQuery.data ?? []).length === 0 ? (
@@ -450,15 +475,33 @@ const Stocks: React.FC = () => {
                   </div>
                 ) : (
                   (recentlyViewedQuery.data ?? []).map((item) => (
-                    <button
+                    <div
                       key={`${item.symbol}-${item.viewedAt}`}
-                      type="button"
-                      onClick={() => selectStock(item.symbol, item.market ?? market)}
-                      className="w-full rounded-xl border border-line bg-surface-hover p-3 text-left transition hover:border-brand/40 hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
+                      className="flex items-center gap-2 rounded-xl border border-line bg-surface-hover p-3 transition hover:border-brand/40"
                     >
-                      <div className="font-medium text-fg">{item.symbol}</div>
-                      <div className="text-sm text-fg-secondary">{item.company}</div>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => selectStock(item.symbol, item.market ?? market)}
+                        className="min-w-0 flex-1 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
+                      >
+                        <div className="font-medium text-fg">{item.symbol}</div>
+                        <div className="text-sm text-fg-secondary">{item.company}</div>
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Remove ${item.symbol} from recently viewed`}
+                        title={`Remove ${item.symbol} from recently viewed`}
+                        disabled={removingSymbol === item.symbol}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          deleteRecentlyViewedMutation.mutate(item.symbol);
+                        }}
+                        className="rounded-lg p-2 text-negative transition hover:bg-negative/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-negative/40 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <Trash2 className={`h-4 w-4 ${removingSymbol === item.symbol ? 'animate-pulse' : ''}`} />
+                      </button>
+                    </div>
                   ))
                 )}
               </div>

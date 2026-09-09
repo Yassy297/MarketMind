@@ -1,4 +1,5 @@
 import { Types } from 'mongoose';
+import { Activity } from '../../models/Activity';
 import { JournalTrade, type IJournalTrade } from '../../models/JournalTrade';
 import type {
   JournalListQuery,
@@ -117,13 +118,33 @@ const scoped = (userId: string, id: string) => ({
   userId: new Types.ObjectId(userId)
 });
 
+const recordJournalActivity = (
+  userId: string,
+  title: string,
+  description: string,
+  trade: Pick<IJournalTrade, 'symbol' | 'displaySymbol' | 'instrumentName'>
+) => {
+  void Activity.create({
+    userId: new Types.ObjectId(userId),
+    title,
+    description,
+    type: 'journal',
+    companySymbol: trade.displaySymbol || trade.symbol,
+    companyName: trade.instrumentName
+  }).catch((error: unknown) => {
+    console.error('Unable to record journal activity:', error instanceof Error ? error.message : error);
+  });
+};
+
 export class JournalService {
   async create(userId: string, input: JournalTradeInput): Promise<JournalTradeRecord> {
     const trade = await JournalTrade.create({
       userId: new Types.ObjectId(userId),
       ...applyFinancials(input)
     });
-    return toRecord(trade);
+    const record = toRecord(trade);
+    recordJournalActivity(userId, 'Trade added', `Added ${record.displaySymbol} trade to Journal`, trade);
+    return record;
   }
 
   async list(userId: string, query: JournalListQuery) {
@@ -211,12 +232,15 @@ export class JournalService {
 
     existing.set(applyFinancials(parsed.data));
     await existing.save();
-    return toRecord(existing);
+    const record = toRecord(existing);
+    recordJournalActivity(userId, 'Trade updated', `Updated ${record.displaySymbol} trade in Journal`, existing);
+    return record;
   }
 
   async remove(userId: string, id: string): Promise<void> {
-    const result = await JournalTrade.deleteOne(scoped(userId, id));
-    if (result.deletedCount === 0) throw new JournalError(404, 'Trade not found.');
+    const deleted = await JournalTrade.findOneAndDelete(scoped(userId, id));
+    if (!deleted) throw new JournalError(404, 'Trade not found.');
+    recordJournalActivity(userId, 'Trade deleted', `Deleted ${deleted.displaySymbol} trade from Journal`, deleted);
   }
 
   async duplicate(userId: string, id: string): Promise<JournalTradeRecord> {

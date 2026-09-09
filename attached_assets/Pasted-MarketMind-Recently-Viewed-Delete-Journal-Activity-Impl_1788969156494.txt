@@ -1,0 +1,341 @@
+MarketMind — Recently Viewed Delete + Journal Activity
+
+Implement ONLY the following two changes. Do not redesign or refactor unrelated parts of the application.
+
+IMPORTANT:
+- Inspect the existing codebase and PROJECT_DOCUMENTATION.md first.
+- Preserve the existing architecture, design system, authentication, API conventions, React Query patterns, and existing routes.
+- Reuse existing components, utilities, icons, activity infrastructure, and styling wherever possible.
+- Do not introduce a new icon library.
+- Do not create a second Recent Activity system.
+- Do not change unrelated UI or behavior.
+- Keep all functionality user-scoped and secure.
+
+==================================================
+PART 1 — DELETE INDIVIDUAL RECENTLY VIEWED STOCK
+==================================================
+
+Currently MarketMind has a Recently Viewed section on:
+
+1. Dashboard
+2. Stocks / Stock Intelligence screen
+
+The existing Recently Viewed backend is user-scoped and uses:
+- server/src/models/RecentlyViewed.ts
+- existing GET /api/stocks/recently-viewed
+- existing backend recently-viewed recording logic
+
+Add the ability to delete one specific recently viewed stock.
+
+### Backend
+
+Inspect the existing RecentlyViewed controller/service/routes and add the smallest appropriate authenticated delete operation.
+
+Preferred API shape:
+
+DELETE /api/stocks/recently-viewed/:symbol
+
+However, before implementing, inspect existing route conventions and choose the route structure that best fits the current architecture.
+
+Requirements:
+
+- Must require existing authentication middleware.
+- Must delete ONLY the authenticated user's matching recently viewed record.
+- Never accept userId from the client.
+- Do not delete the stock from:
+  - Watchlists
+  - Stock search
+  - Stock data
+  - Journal
+  - Any global instrument data
+- Deleting recently viewed history must have no effect on the stock itself.
+- Handle symbols containing characters such as `.`, e.g. HDFCBANK.NS, safely.
+- Return a clean success response.
+- Return 404 if that stock is not present in the authenticated user's recently viewed history.
+- Do not expose database errors or stack traces.
+
+### Frontend
+
+Update BOTH:
+
+A. Dashboard → Recently viewed
+B. Stocks → Recently viewed
+
+Each recently viewed stock card should now have a delete/trash action.
+
+UI requirements:
+
+- Use the already existing icon library in the project.
+- Use the existing trash/delete icon if one already exists elsewhere.
+- Do NOT install another icon package.
+- The trash icon should be red using the existing semantic negative/destructive color token/theme.
+- Do not introduce a new hardcoded red color if an existing semantic negative/destructive class/token exists.
+- Keep the existing card layout and visual hierarchy.
+- The trash icon should be visually subtle but clearly actionable.
+- Place it consistently on the right side of the recently viewed card, without disturbing the stock name/company/date layout.
+- On hover, use the existing hover/focus treatment from the design system.
+- Provide an accessible aria-label/title such as:
+  "Remove TSLA from recently viewed"
+- Ensure keyboard accessibility.
+- Do not make the entire card deletion target.
+
+IMPORTANT INTERACTION:
+
+Clicking the trash icon must NOT navigate to the stock page.
+
+Stop event propagation where necessary so:
+- Clicking the stock card → opens stock
+- Clicking trash → deletes stock from recently viewed
+
+### React Query / State
+
+Use the existing React Query setup.
+
+After successful deletion:
+- Immediately remove/invalidate the affected recently-viewed query.
+- Dashboard and Stocks pages should update without requiring a full browser refresh.
+- Do not refetch unrelated stock, watchlist, journal, or market-context queries.
+- If both pages use different query keys, invalidate/update the appropriate existing keys.
+- Prefer optimistic UI only if it fits the existing patterns; otherwise use a simple mutation + query invalidation.
+
+Handle loading state for the individual delete button so the user cannot accidentally send duplicate delete requests.
+
+If deletion fails:
+- Restore/retain the stock in the UI.
+- Show the project's existing friendly error/toast mechanism.
+- Do not expose backend stack traces.
+
+Do NOT add a confirmation modal for deleting a single recently viewed item unless the existing UX conventions clearly require it. This is a low-risk history cleanup action and should preferably be one click.
+
+==================================================
+PART 2 — JOURNAL CRUD → RECENT ACTIVITY
+==================================================
+
+The existing Journal supports:
+- Add/Create trade
+- Edit/Update trade
+- Delete trade
+
+The existing Dashboard has a Recent Activity section backed by the existing Activity infrastructure and GET /api/dashboard.
+
+Add Journal activity events to that existing system.
+
+DO NOT create a new activity collection or a second activity mechanism.
+
+First inspect:
+- existing Activity model
+- activity service/helper
+- existing activity event types
+- dashboard service/controller
+- existing watchlist activity implementation
+
+Reuse the same architecture and conventions.
+
+### Required Journal activity events
+
+When a user:
+
+1. Creates/adds a trade
+2. Updates/edits a trade
+3. Deletes a trade
+
+create a Recent Activity event.
+
+Use clear human-readable activity messages.
+
+Examples:
+
+CREATE:
+"Trade added"
+"Added TSLA trade to Journal"
+
+UPDATE:
+"Trade updated"
+"Updated TSLA trade in Journal"
+
+DELETE:
+"Trade deleted"
+"Deleted TSLA trade from Journal"
+
+Use the actual instrument symbol/name available on the trade.
+
+If the existing Activity system has a specific event/type/category structure, follow it rather than inventing a new format.
+
+The activity should contain enough information for the existing Dashboard Recent Activity UI to render naturally.
+
+### Activity timing
+
+Activity timestamps must reflect the actual CRUD operation time.
+
+Most recent events should appear first according to the existing Recent Activity ordering.
+
+### User isolation
+
+Activities must belong to the authenticated user.
+
+A user must never see another user's journal activity.
+
+Use req.user.id / existing authenticated user context.
+
+Do not accept userId from the frontend.
+
+### CRUD behavior
+
+CREATE:
+- If the trade is successfully created, record activity.
+- If trade creation fails, do not create activity.
+
+UPDATE:
+- If the trade is successfully updated, record activity.
+- If update fails, do not create activity.
+- Use the updated trade/instrument information where appropriate.
+
+DELETE:
+- If deletion succeeds, record activity.
+- Since the trade will no longer exist after deletion, capture the necessary symbol/name before deleting so the activity can still say which trade was deleted.
+
+Activity logging should NOT cause a successful Journal CRUD operation to fail.
+
+Follow the same failure-handling pattern already used by Watchlist activity logging:
+- primary business operation succeeds
+- activity logging is attempted
+- activity logging failure is logged server-side
+- the original CRUD request remains successful
+
+Do not duplicate activity events.
+
+==================================================
+RECENT ACTIVITY UI
+==================================================
+
+Do not redesign the Dashboard Recent Activity section.
+
+Use its existing:
+- icon
+- category label
+- typography
+- timestamp formatting
+- card layout
+- colors
+
+Only ensure Journal events naturally appear in the existing feed.
+
+If the existing activity UI supports different icons/categories, reuse that mechanism for Journal.
+
+If a Journal-specific icon already exists in the icon library/project, reuse it.
+
+Do not add new visual patterns unless absolutely necessary.
+
+==================================================
+TESTING
+==================================================
+
+Inspect the existing test setup and add focused tests for the new behavior.
+
+Recently Viewed:
+- authenticated user can delete their own recently viewed stock
+- deleting one stock does not delete another stock
+- user cannot delete another user's recently viewed record
+- unauthenticated request is rejected
+- missing recently viewed stock returns the expected error
+- symbols such as HDFCBANK.NS are handled correctly
+
+Journal Activity:
+- create trade → one activity event
+- update trade → one activity event
+- delete trade → one activity event
+- failed create/update/delete → no successful CRUD activity event
+- delete activity retains enough trade information after the trade is removed
+- activities are user-scoped
+- activity logging failure does not cause the successful Journal CRUD operation to fail
+- no duplicate activity is generated for a single CRUD operation
+
+Run the relevant backend/frontend tests and existing test suite where practical.
+
+Also run:
+- TypeScript/type checking
+- lint if available
+- build if available
+
+Fix only issues caused by this implementation.
+
+==================================================
+ARCHITECTURE / REGRESSION SAFETY
+==================================================
+
+Do NOT:
+- replace the Activity model
+- create a new activity collection
+- change the dashboard architecture
+- change RecentlyViewed schema unnecessarily
+- change watchlist behavior
+- change Journal P&L calculations
+- change Journal analytics
+- change stock search
+- change market/currency behavior
+- change provider logic
+- change authentication
+- install new dependencies unless absolutely required
+- redesign Dashboard or Stocks UI
+- redesign the Journal UI
+
+Keep the implementation minimal and aligned with the existing architecture.
+
+==================================================
+PROJECT_DOCUMENTATION.md
+==================================================
+
+IMPORTANT: Unlike the Recently Viewed UI change, the Journal activity change MUST update PROJECT_DOCUMENTATION.md.
+
+Update ONLY the required documentation sections.
+
+Do NOT rewrite the entire document.
+
+Document:
+
+1. Recently Viewed History:
+   - individual recently viewed records can now be removed by the authenticated user
+   - mention the new delete endpoint if one is added
+   - clarify that deletion only removes history and does not affect watchlists or stock data
+
+2. Dashboard / Recent Activity:
+   - Journal create/update/delete operations now generate Recent Activity events through the existing Activity infrastructure.
+
+3. Trade Journal:
+   - document that successful trade create, update, and delete operations create corresponding Recent Activity events.
+
+Keep the documentation concise and synchronized with the actual implementation.
+
+Do NOT document planned behavior that was not implemented.
+
+==================================================
+FINAL VERIFICATION
+==================================================
+
+Before finishing:
+
+1. Verify Dashboard Recently Viewed delete works.
+2. Verify Stocks Recently Viewed delete works.
+3. Verify clicking the trash icon does not navigate to the stock.
+4. Verify the item disappears immediately after successful deletion.
+5. Verify deleting recently viewed does not affect watchlists.
+6. Verify Add Trade creates Recent Activity.
+7. Verify Edit Trade creates Recent Activity.
+8. Verify Delete Trade creates Recent Activity.
+9. Verify failed Journal operations do not create false activity.
+10. Verify activities are user-scoped.
+11. Verify no duplicate activity events.
+12. Verify existing Watchlist activity still works.
+13. Verify existing Dashboard Recent Activity still works.
+14. Run tests/typecheck/build as available.
+15. Confirm PROJECT_DOCUMENTATION.md was updated ONLY for the required Journal activity and Recently Viewed behavior.
+
+At the end, provide:
+- files changed
+- API endpoint added/changed
+- tests added/updated
+- documentation section updated
+- test/build result
+- any issues or limitations found
+
+Do not make any unrelated changes.

@@ -4,7 +4,7 @@ export interface IActivity extends MongooseDocument {
   userId: Types.ObjectId;
   title: string;
   description?: string;
-  type: 'document' | 'watchlist' | 'conversation' | 'company_view';
+  type: 'document' | 'watchlist' | 'conversation' | 'company_view' | 'journal';
   companySymbol?: string;
   companyName?: string;
   createdAt: Date;
@@ -29,7 +29,7 @@ const activitySchema = new Schema<IActivity>(
     },
     type: {
       type: String,
-      enum: ['document', 'watchlist', 'conversation', 'company_view'],
+      enum: ['document', 'watchlist', 'conversation', 'company_view', 'journal'],
       required: true
     },
     companySymbol: {

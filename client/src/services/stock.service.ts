@@ -274,3 +274,14 @@ export async function fetchRecentlyViewed(): Promise<
   >('/api/recently-viewed');
   return response.data;
 }
+
+export async function deleteRecentlyViewed(symbol: string): Promise<void> {
+  await api.delete(`/api/stocks/recently-viewed/${encodeURIComponent(symbol)}`);
+}
+
+export const invalidateRecentlyViewedQueries = (queryClient: {
+  invalidateQueries: (options: { queryKey: string[] }) => unknown;
+}) => {
+  void queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
+  void queryClient.invalidateQueries({ queryKey: ['recently-viewed'] });
+};

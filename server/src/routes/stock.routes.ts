@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   getRecentlyViewed,
+  deleteRecentlyViewed,
   getRecommendation,
   getStock,
   getStockCompetitors,
@@ -20,6 +21,7 @@ const router = Router();
 
 router.get('/search', requireAuth, searchStocks);
 router.get('/recently-viewed', requireAuth, getRecentlyViewed);
+router.delete('/recently-viewed/:symbol', requireAuth, deleteRecentlyViewed);
 router.post('/snapshots', requireAuth, getStockSnapshots);
 router.get('/:symbol/profile', requireAuth, getStockProfile);
 router.get('/:symbol/quote', requireAuth, getStockQuote);

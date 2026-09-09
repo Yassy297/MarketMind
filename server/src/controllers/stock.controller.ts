@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { isCurrencyCode, isMarketCode } from '../config/markets';
-import { stockService } from '../services/stock.service';
+import { RecentlyViewedError, stockService } from '../services/stock.service';
 import { normalizeInstrumentSearchQuery } from '../services/market-data/instrumentSearch.query';
 import type { MarketRequestContext } from '../types/market';
 import { MarketDataError } from '../services/market-data/marketData.errors';
@@ -254,5 +254,24 @@ export const getRecentlyViewed = async (req: Request, res: Response) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to load recently viewed.';
     res.status(500).json({ message });
+  }
+};
+
+export const deleteRecentlyViewed = async (req: Request, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({ message: 'Authentication required.' });
+      return;
+    }
+
+    await stockService.deleteRecentlyViewed(req.user.id, normalizeSymbol(req.params.symbol));
+    res.status(204).send();
+  } catch (error) {
+    if (error instanceof RecentlyViewedError) {
+      res.status(error.status).json({ message: error.message });
+      return;
+    }
+    console.error('Recently viewed delete failed:', error instanceof Error ? error.message : error);
+    res.status(500).json({ message: 'Unable to remove recently viewed stock.' });
   }
 };

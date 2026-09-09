@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { Types } from 'mongoose';
+import { Activity } from '../../models/Activity';
 import { JournalTrade } from '../../models/JournalTrade';
 import type { JournalTradeInput } from '../../types/journal';
 import { JournalError, journalService } from './journal.service';
@@ -55,12 +56,18 @@ describe('JournalService', () => {
 
   it('creates a trade with server-calculated P&L', async () => {
     const original = JournalTrade.create;
+    const originalActivityCreate = Activity.create;
+    let activity: Record<string, unknown> | undefined;
     JournalTrade.create = (async (doc: Record<string, unknown>) => ({
       ...doc,
       id: tradeId,
       createdAt: new Date('2026-08-01T00:00:00.000Z'),
       updatedAt: new Date('2026-08-01T00:00:00.000Z')
     })) as typeof JournalTrade.create;
+    Activity.create = (async (doc: Record<string, unknown>) => {
+      activity = doc;
+      return undefined;
+    }) as typeof Activity.create;
 
     try {
       const trade = await journalService.create(userId, closedLong);
@@ -69,8 +76,13 @@ describe('JournalService', () => {
       assert.equal(trade.netPnl, 19);
       assert.equal(trade.returnPercent, 9.5);
       assert.equal(trade.currency, 'USD');
+      assert.equal(activity?.title, 'Trade added');
+      assert.equal(activity?.description, 'Added AAPL trade to Journal');
+      assert.equal(activity?.type, 'journal');
+      assert.equal(String(activity?.userId), userId);
     } finally {
       JournalTrade.create = original;
+      Activity.create = originalActivityCreate;
     }
   });
 
@@ -161,24 +173,33 @@ describe('JournalService', () => {
       }
     };
     const original = JournalTrade.findOne;
+    const originalActivityCreate = Activity.create;
+    let activity: Record<string, unknown> | undefined;
     JournalTrade.findOne = (async () => existing) as typeof JournalTrade.findOne;
+    Activity.create = (async (doc: Record<string, unknown>) => {
+      activity = doc;
+      return undefined;
+    }) as typeof Activity.create;
 
     try {
       const trade = await journalService.update(userId, tradeId, { exitPrice: 120 });
       assert.equal(trade.grossPnl, 40);
       assert.equal(trade.netPnl, 39);
+      assert.equal(activity?.title, 'Trade updated');
+      assert.equal(activity?.description, 'Updated AAPL trade in Journal');
     } finally {
       JournalTrade.findOne = original;
+      Activity.create = originalActivityCreate;
     }
   });
 
   it('does not delete another user\'s trade', async () => {
     let received: Record<string, unknown> | undefined;
-    const original = JournalTrade.deleteOne;
-    JournalTrade.deleteOne = (async (filter: Record<string, unknown>) => {
+    const original = JournalTrade.findOneAndDelete;
+    JournalTrade.findOneAndDelete = (async (filter: Record<string, unknown>) => {
       received = filter;
-      return { deletedCount: 0 };
-    }) as typeof JournalTrade.deleteOne;
+      return null;
+    }) as typeof JournalTrade.findOneAndDelete;
 
     try {
       await assert.rejects(
@@ -188,7 +209,84 @@ describe('JournalService', () => {
       assert.equal(String(received?._id), tradeId);
       assert.equal(String(received?.userId), userId);
     } finally {
-      JournalTrade.deleteOne = original;
+      JournalTrade.findOneAndDelete = original;
+    }
+  });
+
+  it('records delete activity using the trade snapshot before removal', async () => {
+    const original = JournalTrade.findOneAndDelete;
+    const originalActivityCreate = Activity.create;
+    let activity: Record<string, unknown> | undefined;
+    JournalTrade.findOneAndDelete = (async () => ({
+      symbol: 'HDFCBANK.NS',
+      displaySymbol: 'HDFCBANK.NS',
+      instrumentName: 'HDFC Bank'
+    })) as typeof JournalTrade.findOneAndDelete;
+    Activity.create = (async (doc: Record<string, unknown>) => {
+      activity = doc;
+      return undefined;
+    }) as typeof Activity.create;
+
+    try {
+      await journalService.remove(userId, tradeId);
+      assert.equal(activity?.title, 'Trade deleted');
+      assert.equal(activity?.description, 'Deleted HDFCBANK.NS trade from Journal');
+      assert.equal(activity?.companySymbol, 'HDFCBANK.NS');
+      assert.equal(activity?.companyName, 'HDFC Bank');
+    } finally {
+      JournalTrade.findOneAndDelete = original;
+      Activity.create = originalActivityCreate;
+    }
+  });
+
+  it('does not create activity when journal CRUD fails', async () => {
+    const originalCreate = JournalTrade.create;
+    const originalFind = JournalTrade.findOne;
+    const originalDelete = JournalTrade.findOneAndDelete;
+    const originalActivityCreate = Activity.create;
+    let activityCount = 0;
+    JournalTrade.create = (async () => {
+      throw new Error('create failed');
+    }) as typeof JournalTrade.create;
+    JournalTrade.findOne = (async () => null) as typeof JournalTrade.findOne;
+    JournalTrade.findOneAndDelete = (async () => null) as typeof JournalTrade.findOneAndDelete;
+    Activity.create = (async () => {
+      activityCount += 1;
+      return undefined;
+    }) as typeof Activity.create;
+
+    try {
+      await assert.rejects(() => journalService.create(userId, closedLong));
+      await assert.rejects(() => journalService.update(userId, tradeId, { notes: 'changed' }));
+      await assert.rejects(() => journalService.remove(userId, tradeId));
+      assert.equal(activityCount, 0);
+    } finally {
+      JournalTrade.create = originalCreate;
+      JournalTrade.findOne = originalFind;
+      JournalTrade.findOneAndDelete = originalDelete;
+      Activity.create = originalActivityCreate;
+    }
+  });
+
+  it('does not fail journal CRUD when activity logging fails', async () => {
+    const original = JournalTrade.create;
+    const originalActivityCreate = Activity.create;
+    JournalTrade.create = (async (doc: Record<string, unknown>) => ({
+      ...doc,
+      id: tradeId,
+      createdAt: new Date('2026-08-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-08-01T00:00:00.000Z')
+    })) as typeof JournalTrade.create;
+    Activity.create = (async () => {
+      throw new Error('activity unavailable');
+    }) as typeof Activity.create;
+
+    try {
+      const trade = await journalService.create(userId, closedLong);
+      assert.equal(trade.id, tradeId);
+    } finally {
+      JournalTrade.create = original;
+      Activity.create = originalActivityCreate;
     }
   });
 });

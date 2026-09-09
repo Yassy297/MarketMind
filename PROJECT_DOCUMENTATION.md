@@ -858,9 +858,18 @@ Returns up to 5 most recent records (limit hardcoded in controller), sorted by `
 ]
 ```
 
+### Removing History
+
+```
+DELETE /api/stocks/recently-viewed/:symbol
+Authorization: Bearer <token>
+```
+
+The delete is scoped to the authenticated user and returns `404` when that user's matching record is absent. It removes only the Recently Viewed history entry; it does not affect watchlists, search results, stock data, journal entries, or any global instrument data. Symbols are URL-encoded by the frontend, including exchange-suffixed symbols such as `HDFCBANK.NS`.
+
 ### Frontend Display
 
-`client/src/pages/Stocks.tsx` uses React Query to fetch and display recently viewed history as clickable cards. Clicking a card updates the search box and navigates.
+`client/src/pages/Stocks.tsx` and the Dashboard Recently Viewed card use React Query to fetch and display recently viewed history as clickable cards. Clicking a card updates the search box and navigates. Each card has an accessible destructive delete action that does not navigate; successful deletion invalidates only the related Recently Viewed and Dashboard summary queries.
 
 ## Currency Conversion
 
@@ -1032,6 +1041,10 @@ Returns:
 }
 ```
 
+### Recent Activity
+
+Recent Activity is backed by the existing `Activity` collection and is user-scoped. Successful Journal trade create, update, and delete operations add one corresponding event to this feed. Journal activity uses the same dashboard rendering, ordering, timestamps, and failure-isolation behavior as existing activity events.
+
 ## Watchlist System
 
 **Status: ✅ MULTI-WATCHLIST BACKEND AND FRONTEND IMPLEMENTED**
@@ -1128,6 +1141,7 @@ The Trade Journal lets a user record trades they have already taken and review t
 
 - Universal `JournalTrade` MongoDB model (one collection for every journal asset class)
 - Authenticated CRUD, list, stats, duplicate, overview, calendar, and analytics APIs under `/api/journal`
+- Successful trade create, update, and delete operations record one user-scoped Recent Activity event through the existing `Activity` infrastructure; activity logging failures do not fail the Journal operation
 - Server-side P&L, return percent, risk/reward, and holding duration
 - Server-side journal analytics (no browser-side aggregation of full trade history)
 - Monthly calendar summaries loaded by year/month only
