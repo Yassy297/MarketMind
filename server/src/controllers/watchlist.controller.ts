@@ -4,7 +4,8 @@ import {
   addWatchlistItemSchema,
   createWatchlistSchema,
   updateWatchlistItemSchema,
-  updateWatchlistSchema
+  updateWatchlistSchema,
+  watchlistMembershipQuerySchema
 } from '../validators/watchlist.validators';
 
 const routeId = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value) ?? '';
@@ -81,6 +82,21 @@ export const deleteWatchlist = async (req: Request, res: Response) => {
     res.status(204).send();
   } catch (error) {
     sendWatchlistError(res, error, 'Unable to delete watchlist.');
+  }
+};
+
+export const listWatchlistMemberships = async (req: Request, res: Response) => {
+  const userId = requireUser(req, res);
+  if (!userId) return;
+  const parsed = watchlistMembershipQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    sendValidationError(res, parsed);
+    return;
+  }
+  try {
+    res.json(await watchlistService.findMemberships(userId, parsed.data));
+  } catch (error) {
+    sendWatchlistError(res, error, 'Unable to load watchlist membership.');
   }
 };
 

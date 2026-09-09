@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type ReactNode } from 'react';
 
 type StockHeaderProps = {
   symbol: string;
@@ -9,6 +9,7 @@ type StockHeaderProps = {
   country?: string;
   currency?: string;
   loading?: boolean;
+  action?: ReactNode;
 };
 
 const StockHeader: React.FC<StockHeaderProps> = ({
@@ -19,7 +20,8 @@ const StockHeader: React.FC<StockHeaderProps> = ({
   isin,
   country,
   currency,
-  loading = false
+  loading = false,
+  action
 }) => {
   return (
     <div className="mm-card p-6">
@@ -30,18 +32,21 @@ const StockHeader: React.FC<StockHeaderProps> = ({
         </div>
       ) : (
         <>
-          <div className="flex flex-wrap items-center gap-2">
-            {exchange ? (
-              <span className="rounded-md bg-brand-subtle px-2 py-0.5 text-xs font-semibold uppercase tracking-wider text-brand">
-                {exchange}
-              </span>
-            ) : null}
-            {sector ? (
-              <span className="rounded-md bg-surface-hover px-2 py-0.5 text-xs font-medium text-fg-secondary">
-                {sector}
-              </span>
-            ) : null}
-            <span className="text-sm text-fg-muted">{symbol}</span>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              {exchange ? (
+                <span className="rounded-md bg-brand-subtle px-2 py-0.5 text-xs font-semibold uppercase tracking-wider text-brand">
+                  {exchange}
+                </span>
+              ) : null}
+              {sector ? (
+                <span className="rounded-md bg-surface-hover px-2 py-0.5 text-xs font-medium text-fg-secondary">
+                  {sector}
+                </span>
+              ) : null}
+              <span className="text-sm text-fg-muted">{symbol}</span>
+            </div>
+            {action}
           </div>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-fg">{name}</h2>
           <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-fg-muted">

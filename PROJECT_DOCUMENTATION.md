@@ -18,6 +18,7 @@ MarketMind is a full-stack SaaS-style financial research platform with a React +
 - **Cookie-Based Authentication**: httpOnly cookies, refresh token rotation, session restoration
 - **Protected Routes**: Authentication guard on all research features
 - **Trade Journal**: Record, review, and analyze trades already taken (MarketMind does not place or execute orders)
+- **Watchlists**: Multiple user-owned lists of researched instruments, with stock-detail membership and live quote/profile snapshots
 - **Appearance**: System / Light / Dark theme persisted to the authenticated user (visual only; does not affect market or journal data)
 
 ## High-Level Architecture
@@ -43,6 +44,7 @@ MarketMind is a full-stack SaaS-style financial research platform with a React +
 │  - /api/stocks/* (search, data)        │
 │  - /api/market/context (preferences)   │
 │  - /api/journal/* (trade journal)      │
+│  - /api/watchlists/* (multi-watchlist) │
 └────────────┬──────────────────────────┘
              │
    ┌─────────▼──────────┐
@@ -76,7 +78,7 @@ MarketMind is a full-stack SaaS-style financial research platform with a React +
 │  - User prefs       │
 │  - Recently viewed  │
 │  - JournalTrade     │
-│  - Watchlist (model only) │
+│  - Watchlist + items      │
 └──────────────────────┘
 ```
 
@@ -184,9 +186,12 @@ The resolver (`marketData.providerResolver.ts`) follows this logic:
 1. Check environment config for market-specific provider (`MARKET_PROVIDER_IN`, `MARKET_PROVIDER_US`)
 2. Check market's preferred providers list (from `config/markets.ts`)
 3. Fall back to default provider (`MARKET_PROVIDER_DEFAULT`)
-4. Always include `finnhub` as the final fallback
-5. Return the first `isConfigured()` and `supports(capability)` provider; else Finnhub
-6. Upstox is only a candidate for the India market (`IN`); it is not a global fundamentals fallback
+4. Include `finnhub` as a candidate if `FINNHUB_API_KEY` is set
+5. For India, include `upstox` if `UPSTOX_ACCESS_TOKEN` is set
+6. Include `twelveData` as a candidate; it never matches because it is a stub
+7. Return providers that are both `isConfigured()` and `supports(capability)`
+
+Upstox is not a global fundamentals fallback. See **Provider Audit (4 September 2026)** for the current matrix.
 
 If no configured provider supports the requested capability, the resolver returns a controlled `MARKET_PROVIDER_UNAVAILABLE` error. Credentials remain optional at application startup.
 
@@ -343,6 +348,184 @@ Frontend
 
 Indian equities such as HDFCBANK.NS use the same News Service as AAPL, TSLA, and NVDA. Country/market context is used to resolve the company and filter relevance. The Stocks page shows Latest news with loading independent of quotes and fundamentals.
 
+## Provider Audit (4 September 2026)
+
+This audit inspects the current repository only. No providers were added, removed, or rewired. Alpha Vantage and Polygon are not present.
+
+### Runtime vs stub
+
+| Provider | Role | Runtime status |
+|----------|------|----------------|
+| **Finnhub** | Global market data + news fallback | **Called at runtime** when `FINNHUB_API_KEY` is set |
+| **Upstox** | India market data + fundamentals | **Called at runtime** when `UPSTOX_ACCESS_TOKEN` is set |
+| **Marketaux** | Primary news | **Called at runtime** when `MARKETAUX_API_KEY` is set |
+| **Frankfurter** | Display-currency FX | **Called at runtime**; no API key |
+| **Twelve Data** | Intended global fallback | **Stub only.** `isConfigured()` and `supports()` are hardcoded `false`. No HTTP calls. `TWELVE_DATA_API_KEY` is documented but **not loaded** in `server/src/config/env.ts` |
+| Alpha Vantage | — | **Not in the project** |
+| Polygon | — | **Not in the project** |
+
+### Current provider matrix
+
+| Capability | India (`IN`, `.NS` / `.BO`) | United States | Other configured markets (GB, CA, AU, …) |
+|------------|-----------------------------|---------------|------------------------------------------|
+| Search | Upstox + Finnhub in parallel, then dedupe | Finnhub (Twelve Data listed, never selected) | Finnhub (Twelve Data listed, never selected) |
+| Profile | Upstox, then Finnhub if Upstox fails | Finnhub | Finnhub |
+| Quote | Upstox, then Finnhub if Upstox fails | Finnhub | Finnhub |
+| Recommendation | Finnhub only (Upstox does not support it) | Finnhub | Finnhub |
+| News | News Service: Marketaux → Finnhub | Same | Same |
+| Fundamentals / statements / shareholding / corporate actions / competitors | Upstox only; no second vendor | `not-supported` empty contracts | `not-supported` empty contracts |
+| Historical OHLC / price charts | **Missing** | **Missing** | **Missing** |
+| FX conversion | Frankfurter only | Frankfurter only | Frankfurter only |
+
+Preferred-provider lists in `server/src/config/markets.ts` still name `twelveData` after Finnhub for every non-India market. That entry has no effect until Twelve Data is implemented.
+
+### Per-provider detail
+
+#### Finnhub — runtime global market data
+
+- **Markets covered:** Intended for all 22 registry markets. Live-verified in-repo for US profile/quote (AAPL, TSLA, NVDA). Search metadata (exchange, country, currency, ISIN) is often `null`.
+- **Endpoints used:** `https://finnhub.io/api/v1`
+  - `GET /search?q=`
+  - `GET /stock/profile2?symbol=`
+  - `GET /quote?symbol=`
+  - `GET /stock/recommendation?symbol=`
+  - `GET /news?symbol=` (entity news fallback)
+  - `GET /news?category=general` (latest news fallback)
+- **Fields returned (normalized):** search `symbol`, `displaySymbol`, `description`/`companyName`, `type`; profile `name`, `ticker`, `exchange`, `industry`, `marketCapitalization`, `currency`, `country`, `ipo`, `logo`, `weburl`; quote `c/d/dp/h/l/o/pc/t` → price fields; recommendation `buy`, `hold`, `sell`, `period`; news `id`, `headline`, `summary`, `url`, `datetime`, `source`.
+- **Rate limits:** Not enforced in MarketMind. Finnhub’s free tier is commonly 60 calls/minute. Watchlist snapshots can amplify quote+profile traffic.
+- **Caching:** No Finnhub-specific cache. `MarketDataService` caches profiles for 1 hour (deduped in-flight). News Service caches entity news 15 minutes.
+- **Fallback behavior:** Used as last configured search/profile/quote/recommendation candidate. News fallback after Marketaux. Does not serve fundamentals.
+- **Environment:** `FINNHUB_API_KEY`
+- **Commercial-use implications:** Free-tier keys are generally for evaluation. A production SaaS that redisplays quotes should use a paid Finnhub plan and follow their attribution/ToS. Do not expose the key to the browser (current code does not).
+
+#### Upstox — runtime India market data
+
+- **Markets covered:** NSE and BSE equities only (`IN`). Not used as a global vendor.
+- **Endpoints used:** `https://api.upstox.com/v2`
+  - `GET /instruments/search` (query, NSE/BSE, EQ)
+  - `GET /market-quote/quotes?instrument_key=`
+  - `GET /fundamentals/{isin}/profile`
+  - `GET /fundamentals/{isin}/key-ratios`
+  - `GET /fundamentals/{isin}/income-statement`
+  - `GET /fundamentals/{isin}/balance-sheet`
+  - `GET /fundamentals/{isin}/cash-flow`
+  - `GET /fundamentals/{isin}/share-holdings`
+  - `GET /fundamentals/{isin}/corporate-actions`
+  - `GET /fundamentals/{instrument_key}/competitors`
+- **Fields returned (normalized):** search identity including ISIN and `instrument_key`; quote last price, net change, day OHLC, timestamp (INR); profile description/sector/sector market cap (company market cap stays `null`); ratios P/E, P/B, ROA, ROE, ROCE, EV/EBITDA plus derived per-share metrics when inputs exist; statement summaries; quarterly shareholding; corporate actions; peers.
+- **Rate limits:** Not enforced in MarketMind. Consult Upstox developer limits. 401/403 map to `PROVIDER_AUTHENTICATION_FAILED`.
+- **Caching:** Search 5 minutes; instrument resolution 12 hours; each fundamentals resource 4 hours with in-flight dedupe. Quotes are not TTL-cached after resolve.
+- **Fallback behavior:** Primary for India search/profile/quote/research. News and recommendations throw / are unsupported, so those capabilities go to News Service / Finnhub. No second India fundamentals vendor.
+- **Environment:** `UPSTOX_ACCESS_TOKEN` (required for calls). `UPSTOX_API_KEY` and `UPSTOX_API_SECRET` are loaded but unused by current read methods.
+- **Commercial-use implications:** This is a broker developer API with an OAuth access token, not a general market-data license. Token expiry is not auto-refreshed. Redistributing live NSE/BSE data in a commercial product may require Upstox/exchange rights beyond a personal token. Do not send the token to the client (current code does not).
+
+#### Marketaux — runtime primary news
+
+- **Markets covered:** Language `en`; optional `countries` from market/profile country. Used for Indian and global symbols through the News Service.
+- **Endpoints used:** `https://api.marketaux.com/v1`
+  - `GET /entity/search`
+  - `GET /news/all` (`limit=3`)
+- **Fields returned (normalized `NewsItem`):** `id`, `headline`, `summary`, `url`, `datetime`, `source`, optional image/symbols/company/exchange/country/sentiment, `sourceProvider: marketaux`.
+- **Rate limits:** Hardcoded `limit=3` to match the common free-plan page size. Daily request quotas are not enforced in code.
+- **Caching:** News Service 15-minute in-memory cache per symbol+country.
+- **Fallback behavior:** First news provider. On failure or empty configuration, Finnhub news is tried.
+- **Environment:** `MARKETAUX_API_KEY`
+- **Commercial-use implications:** Free plans are request-capped. Production news in a SaaS typically needs a paid Marketaux plan and compliance with their redistribution rules.
+
+#### Frankfurter — runtime FX
+
+- **Markets covered:** Pairs among the 18 configured display currencies (ECB-based; some exotic pairs may be unavailable).
+- **Endpoints used:** `https://api.frankfurter.dev/v2/rate/{source}/{target}`
+- **Fields returned:** a single numeric `rate`, wrapped as `ConvertedMonetaryValue`.
+- **Rate limits:** No key. MarketMind caches 6 hours and dedupes in-flight pair requests.
+- **Caching:** 6-hour TTL per pair.
+- **Fallback behavior:** On failure returns `null` → `conversionStatus: 'unavailable'`. No second FX provider.
+- **Environment:** none
+- **Commercial-use implications:** Public ECB-derived reference rates. Suitable for display conversion, not trading-grade FX. Attribution/ToS of Frankfurter/ECB still apply. No secret to leak.
+
+#### Twelve Data — stub only
+
+- **Markets covered:** Named in preferred-provider lists for every non-India market; never invoked.
+- **Endpoints used:** none
+- **Fields returned:** none (throws “not been configured”)
+- **Rate limits / caching / fallback:** n/a
+- **Environment:** `TWELVE_DATA_API_KEY` appears in documentation comments only; **not** read by `env.ts` or `.env.example`
+- **Commercial-use implications:** none until implemented
+
+### Request flow
+
+```
+Frontend (React Query + client/src/services/stock.service.ts)
+    ↓  cookie auth, no vendor URLs
+GET/POST /api/stocks/*  (stock.controller.ts)
+    ↓
+stock.service.ts
+    ↓
+marketData.service.ts          (profile cache 1h; sequential fallback for profile/quote/recommendation)
+    ├─ search → instrumentSearch.service.ts → resolver.resolveAll(market, 'search') → parallel provider.search()
+    ├─ profile / quote / recommendation → resolver.resolveAll(...) → tryProvidersInFallback()
+    ├─ fundamentals / statements / shareholding / actions / competitors → resolver.resolveOptional() (single provider, no vendor fallback)
+    └─ news → news.service.ts → news.providerResolver (Marketaux, then Finnhub)
+         + currency.service.ts → Frankfurter for monetary display conversion
+```
+
+Resolver candidate order (`marketData.providerResolver.ts`):
+
+1. `MARKET_PROVIDER_IN` / `MARKET_PROVIDER_US` / `MARKET_PROVIDER_DEFAULT` if set
+2. `MARKET_CONFIG[market].preferredProviders`
+3. `finnhub`
+4. `upstox` when market is `IN`
+5. `twelveData` (never selected)
+
+Symbols ending in `.NS` or `.BO` are forced to market `IN` in `marketData.service.ts` and `stock.controller.ts`.
+
+### Frontend coupling
+
+The frontend does **not** call Finnhub, Upstox, Marketaux, Frankfurter, or Twelve Data.
+
+- All market calls go through `/api/stocks/*` with `withCredentials`.
+- Vendor secrets stay on the server.
+- Normalized DTOs include a `provider` name (`finnhub` \| `upstox` \| `twelveData`) on search/watchlist identity. That is a label stored from the backend, not a vendor SDK.
+- `Stocks.tsx` loads fundamentals/statements/shareholding/actions/competitors only when `market === 'IN'` or the symbol ends with `.NS` / `.BO`. That is market-capability UI, not a hard-coded Upstox client.
+- Watchlist snapshots use `POST /api/stocks/snapshots`, which reuses the same server provider path.
+
+### Missing historical OHLC / time-series
+
+No candle, history, or time-series market-data endpoint exists.
+
+- Finnhub `/stock/candle` is not called.
+- Upstox historical candle APIs are not called. Quote responses include **intraday** `ohlc` (open/high/low/previous close) only.
+- There is no `/api/stocks/:symbol/history` route and no chart series in the client.
+- Financial-statement history (yearly/quarterly income, annual balance sheet/cash flow) is not a price chart.
+
+### Missing fallback paths
+
+| Gap | What happens today |
+|-----|--------------------|
+| Twelve Data stub | Preferred-provider lists name it, but it never runs. There is no working second global vendor. |
+| Global fundamentals | Finnhub `supports()` excludes fundamentals. US/other markets get `not-supported`, not a Finnhub metrics fallback. |
+| India fundamentals if Upstox is down | No second fundamentals vendor. UI shows unavailable / not-supported. |
+| India quote/profile if Upstox fails | Finnhub is tried. Coverage for `.NS` / `.BO` symbols on Finnhub is unreliable. |
+| India recommendations | Finnhub is the only attempt; often empty for Indian symbols. |
+| Currency | Frankfurter only. Failure → `conversionStatus: 'unavailable'`. No second FX vendor. |
+| News | Marketaux then Finnhub. If both fail or are unconfigured → `NEWS_PROVIDER_UNAVAILABLE` / temporary error. |
+| Finnhub company news path | `FinnhubProvider.getNews()` calls `GET /news?symbol=...`, not Finnhub’s `/company-news` range API. Fallback news coverage may be weaker than Finnhub’s company-news product. |
+| Quote/profile cache vs news | Profiles cache 1 hour; news caches 15 minutes; quotes are not TTL-cached at the market-data layer (Upstox quotes hit the API each time after instrument resolve cache). |
+
+### Recommendation (preserve current architecture)
+
+Do not add Alpha Vantage or Polygon. Do not replace the resolver. Keep one provider interface, one News Service, and one FX interface.
+
+| Role | Recommendation | Why |
+|------|----------------|-----|
+| **Primary India** | **Upstox** (keep) | Only implemented source for NSE/BSE search identity, live quote, and research (ratios, statements, shareholding, actions, peers). |
+| **Primary global** | **Finnhub** (keep) | Only implemented source for non-India search, profile, quote, and recommendations. |
+| **Secondary / fallback** | **Twelve Data, later** (keep stub for now) | Already registered. Implementing it would give a real global fallback without a new vendor family. Until then, global has no working second provider. |
+| **News** | **Marketaux primary, Finnhub fallback** (keep) | Already isolated from market-data providers. Improve Finnhub company-news wiring before adding another news vendor. |
+| **Currency** | **Frankfurter** (keep) | No key, 6-hour cache, display-grade ECB reference rates. A second FX provider is optional and not required for this architecture. |
+
+India research should stay Upstox-first. Do not route US/global fundamentals through Upstox. Do not put provider HTTP in React.
+
 ## Markets & Regional Support
 
 ### Configured Markets
@@ -386,7 +569,7 @@ When a frontend request arrives:
 1. Check market-specific environment variable (`MARKET_PROVIDER_IN`, `MARKET_PROVIDER_US`, etc.)
 2. Check market's `preferredProviders` list
 3. Filter to `isConfigured()` && `supports(capability)` providers
-4. Fall back to Finnhub (always available as final fallback)
+4. Fall back to Finnhub if `FINNHUB_API_KEY` is set (Twelve Data is listed but never selected)
 
 ## User Market Preferences
 
@@ -851,9 +1034,9 @@ Returns:
 
 ## Watchlist System
 
-**Status: ✅ BACKEND MULTI-WATCHLIST CRUD IMPLEMENTED; FRONTEND INTEGRATION NOT YET IMPLEMENTED**
+**Status: ✅ MULTI-WATCHLIST BACKEND AND FRONTEND IMPLEMENTED**
 
-MarketMind supports many user-owned watchlists, with many instrument memberships in each list. The same canonical instrument may be a member of multiple watchlists, but it cannot be added twice to the same watchlist.
+MarketMind supports many user-owned watchlists, with many instrument memberships in each list. Users create their own names (for example Long Term or US Stocks); lists are not hardcoded. The same canonical instrument may be a member of multiple watchlists, but it cannot be added twice to the same watchlist. Removing an item removes it only from that list. It does not delete the instrument from other lists, recently viewed, search, or any global registry.
 
 ### Architecture and ownership
 
@@ -872,13 +1055,13 @@ The existing legacy `symbols` field remains readable so older single-list docume
 
 ### Canonical instrument identity and duplicates
 
-Watchlists do not store raw provider response objects or depend directly on Upstox/Finnhub. `identityKey` is generated from the strongest available stable identity (ISIN, generic instrument ID, provider instrument key, or symbol), while retaining normalized market and exchange context. For example, `TSLA` on two exchanges or in two markets remains distinct.
+Watchlists do not store raw provider response objects or depend directly on Upstox/Finnhub. `identityKey` is generated from the strongest available stable identity (ISIN, generic instrument ID, provider instrument key, or symbol), while retaining normalized market and exchange context. For example, `TSLA` on two exchanges or in two markets remains distinct. `HDFCBANK.NS` and `HDFCBANK.BO` remain distinct when their canonical identities differ.
 
-Duplicate detection is performed using `identityKey`. The service checks existing items and uses an atomic MongoDB update predicate when adding an item, so concurrent requests cannot append the same identity to one list. Watchlist names are trimmed, normalized, and unique per user through both application validation and a sparse `{ userId, normalizedName }` unique index. Names are not globally unique.
+Duplicate detection uses `identityKey` and an `instrumentsMatch` helper so the same listing is recognized when search and company-profile exchange labels differ (for example `NASDAQ NMS` vs `NASDAQ`, or a shared ISIN). The service also uses an atomic MongoDB update predicate when adding an item, so concurrent requests cannot append the same identity to one list. Watchlist names are trimmed, normalized, and unique per user through both application validation and a sparse `{ userId, normalizedName }` unique index. Names are not globally unique.
 
 ### Ordering and activity
 
-Watchlists and items use non-negative integer `sortOrder`. New items append after the current last item; deleting an item does not trigger a full reindex. Item reordering only updates an item scoped to the authenticated user's watchlist.
+Watchlists and items use non-negative integer `sortOrder`. New items append after the current last item; deleting an item does not trigger a full reindex. Item reordering is implemented on the backend (`PATCH /api/watchlists/:watchlistId/items/:itemId`) and only updates an item scoped to the authenticated user's watchlist. The Watchlist page displays items in stored order and does not expose a drag-and-drop reorder control.
 
 The existing `Activity` model is suitable for watchlist events, so no new activity architecture was added. The backend records watchlist creation, rename, deletion, item addition, and item removal. Activity failures are logged without failing the primary watchlist operation.
 
@@ -890,6 +1073,7 @@ All endpoints require the existing `requireAuth` middleware:
 |--------|----------|-------------|
 | GET | `/api/watchlists` | List the authenticated user's watchlists with item counts |
 | POST | `/api/watchlists` | Create a watchlist (`name`, optional `description`, optional `sortOrder`) |
+| GET | `/api/watchlists/membership` | Lists that contain a canonical instrument (`symbol` required; optional `market`, `exchange`, `isin`, `instrumentId`, `instrumentKey`) |
 | PATCH | `/api/watchlists/:watchlistId` | Update `name`, `description`, and/or `sortOrder` |
 | DELETE | `/api/watchlists/:watchlistId` | Delete a user-owned watchlist and its embedded items |
 | GET | `/api/watchlists/:watchlistId/items` | List items for a user-owned watchlist |
@@ -897,15 +1081,42 @@ All endpoints require the existing `requireAuth` middleware:
 | PATCH | `/api/watchlists/:watchlistId/items/:itemId` | Update an item's `sortOrder` |
 | DELETE | `/api/watchlists/:watchlistId/items/:itemId` | Remove an item from a user-owned watchlist |
 
-List responses use normalized API DTOs. `GET /api/watchlists` returns `{ watchlists: [...] }` with `id`, `name`, `description`, `itemCount`, `sortOrder`, `createdAt`, and `updatedAt`. Item responses include `id`, `identityKey`, canonical metadata, `sortOrder`, and `addedAt`.
+List responses use normalized API DTOs. `GET /api/watchlists` returns `{ watchlists: [...] }` with `id`, `name`, `description`, `itemCount`, `sortOrder`, `createdAt`, and `updatedAt`. Item responses include `id`, `identityKey`, canonical metadata, `sortOrder`, and `addedAt`. Membership returns `{ memberships: [{ watchlistId, watchlistName, itemId, identityKey }] }`.
+
+`POST /api/stocks/snapshots` is a small authenticated batch helper used by the Watchlist page. It accepts up to 40 `{ symbol, market? }` instruments plus an optional display `currency`, and returns quote + profile pairs in parallel. Missing provider data is returned as `null` rather than fabricated. Snapshots do not write recently viewed history.
 
 ### Validation and errors
 
 Validation uses the existing Zod dependency. Watchlist names are required, trimmed, non-empty, and limited to 80 characters; descriptions are limited to 500 characters. Item symbols, display symbols, and company names are required, supported market/currency values are checked against the existing registries, and item ordering must be a non-negative integer. Malformed IDs return `400`, missing user-owned resources return `404`, duplicate names/items return `409`, and invalid bodies return `422`. Database details and stack traces are not returned by watchlist controllers.
 
-### Dashboard interaction and remaining frontend work
+### Frontend Watchlist page
 
-The existing dashboard `watchlistCount` contract is preserved, but it now counts unique tracked instrument identities across the user's watchlists, matching the existing “Tracked companies” label. Watchlist CRUD is backend-only in this phase. The existing Watchlist page, stock detail actions, live market-data table, sorting/filtering controls, and full frontend integration remain not yet implemented.
+`client/src/pages/Watchlist.tsx` is the multi-watchlist workspace. It uses the existing design system (`mm-page`, `mm-card`, buttons, Select, EmptyState, PageHeader, Dialog) and React Query against `/api/watchlists`.
+
+- Header: “My Watchlists” with **New Watchlist**
+- Desktop: list selector showing name, instrument count, optional description, and the active list
+- Mobile: dropdown/select for the same lists
+- Create / rename / edit description in an accessible dialog; delete requires confirmation and does not delete stocks
+- Selected-list empty state: “This watchlist is empty.” with a link to Stock Intelligence
+- No-lists empty state: “You haven't created a watchlist yet.” with a create CTA
+- Add stock reuses the existing case-insensitive `GET /api/stocks/search` autocomplete (`JournalInstrumentSearch` with custom instruments disabled)
+- Instrument rows/cards show symbol, name, exchange/market, converted price, day change, day change %, market cap when the snapshot provides it, and quote freshness. Unavailable fields render as “—”
+- Open/view navigates to Stock Intelligence with the item’s symbol and market. Remove affects only the selected list
+- Selected list is reflected in the `?list=` query parameter so a refresh keeps the same list
+
+Loading uses skeletons. Mutations invalidate `watchlists`, `watchlist-items`, `watchlist-membership`, and `dashboard-summary`. Friendly API messages are shown; provider/stack traces are not.
+
+### Stock detail integration
+
+Stock Intelligence (`StockHeader`) shows **Add to Watchlist**, **In {list name}**, or **Added to N watchlists**. The dialog lists the user’s watchlists, toggles membership immediately, and can create a new list without leaving the page. Membership is loaded from `GET /api/watchlists/membership` using the viewed symbol plus available ISIN / instrument key / market / exchange.
+
+### MarketContext and currency
+
+Watchlist membership is user data and is not filtered or deleted when country/market changes. Quote and market-cap display use the current MarketContext currency through `POST /api/stocks/snapshots`. `watchlist-snapshots` is included in MarketContext’s existing query refetch set so currency changes update monetary values via `MarketTransitionLoader`. Theme changes do not refetch watchlists.
+
+### Dashboard interaction
+
+`GET /api/dashboard` `watchlistCount` remains the count of unique tracked instrument identities across the user’s watchlists, matching the existing “Tracked companies” label. It is not the number of watchlist documents. Recently viewed stays a separate history and is not a watchlist.
 
 ## Trade Journal
 
@@ -1127,7 +1338,7 @@ Options: **System** (default), **Light**, **Dark**.
 
 The existing `client/public/marketmind-logo.svg` is used as the favicon (`client/index.html`) and as in-app brand mark (sidebar, auth layout, market transition loader). The artwork was not redesigned.
 
-Watchlist multi-list backend CRUD is **implemented**. The Watchlist page is still a design-system foundation only; frontend integration and live watchlist market data are not implemented.
+Watchlist multi-list backend CRUD and the Watchlist page frontend are **implemented**, including stock-detail membership and quote/profile snapshots. Theme changes remain visual only and do not refetch watchlist membership.
 
 ## Root Structure
 
@@ -1156,7 +1367,14 @@ client/
         JournalPnlChart.tsx          # SVG P&L bar/line charts
         JournalAnalyticsTable.tsx    # Sortable analytics table
         JournalReportFilters.tsx     # Shared report filters
+      watchlist/
+        WatchlistPicker.tsx          # Desktop list / mobile select
+        WatchlistItemsPanel.tsx      # Instrument table and mobile cards
+        WatchlistFormDialog.tsx      # Create / rename watchlist
+        WatchlistDeleteDialog.tsx    # Delete confirmation
+        StockWatchlistControl.tsx    # Stock detail add/remove/create
       ui/                     # Base controls (button, input, etc.)
+        Dialog.tsx                   # Accessible modal (focus trap)
         InfoTooltip.tsx              # Reusable field help tooltip
       Navbar.tsx              # Top navigation with country/currency selectors
       Sidebar.tsx             # Icon-based navigation menu
@@ -1192,7 +1410,7 @@ client/
         JournalReports.tsx    # Strategy/setup/psychology/time/risk reports
       Login.tsx               # Login form
       Register.tsx            # Registration form
-      Watchlist.tsx           # UI foundation only (multi-watchlist not implemented)
+      Watchlist.tsx           # Multi-watchlist workspace (create, switch, items, live snapshots)
       Documents.tsx           # (scaffolded)
       AIChat.tsx              # (scaffolded)
       Settings.tsx            # Appearance implemented; other preference rows remain placeholders
@@ -1201,9 +1419,11 @@ client/
       api.ts                  # Axios instance with auth cookie interceptor
       auth.ts                 # Auth API calls (login, register, refresh)
       market-context.service.ts # Market preferences API calls
-      stock.service.ts        # Stock data API calls
+      stock.service.ts        # Stock data API calls, including batch snapshots
+      watchlist.service.ts    # Watchlist CRUD, items, membership, cache invalidation
       journal.service.ts      # Trade journal API calls (CRUD, overview, calendar, analytics)
     types/
+      watchlist.ts            # Watchlist and membership DTOs
       index.ts                # TypeScript interfaces (Auth, User, etc.)
     utils/
       currency.ts             # Central monetary display formatting
@@ -1290,6 +1510,7 @@ server/
     validators/
       journal.validators.ts   # Zod schemas for create, update, list, calendar, analytics
       watchlist.validators.ts # Zod schemas for watchlist and item CRUD
+      stock.validators.ts     # Zod schema for batch stock snapshots
     utils/
       jwt.ts                  # Token encode/decode utilities
       password.ts             # bcryptjs hashing utilities
@@ -1364,6 +1585,7 @@ server/
 | Method | Endpoint | Auth | Query Params | Description |
 |--------|----------|------|--------------|-------------|
 | GET | `/api/stocks/search` | ✅ | `q`, `market?`, `currency?` | Search companies by name/symbol |
+| POST | `/api/stocks/snapshots` | ✅ | body: `instruments`, `currency?` | Batch quote + profile for watchlist rows (max 40) |
 | GET | `/api/stocks/recently-viewed` | ✅ | | Get 5 most recent viewed companies |
 | GET | `/api/stocks/:symbol/profile` | ✅ | `market?`, `currency?` | Get company profile and metadata |
 | GET | `/api/stocks/:symbol/quote` | ✅ | `market?`, `currency?` | Get current price and intraday metrics |
@@ -1381,6 +1603,22 @@ server/
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
 | GET | `/api/dashboard` | ✅ | Dashboard summary (document count, watchlist count, recent activity) |
+
+### Watchlists
+
+All watchlist routes require authentication. Every query is scoped to `req.user.id`. The client never supplies `userId`.
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/watchlists` | ✅ | List the authenticated user's watchlists with item counts |
+| POST | `/api/watchlists` | ✅ | Create a watchlist |
+| GET | `/api/watchlists/membership` | ✅ | Watchlists containing a canonical instrument |
+| PATCH | `/api/watchlists/:watchlistId` | ✅ | Rename, update description, or reorder a list |
+| DELETE | `/api/watchlists/:watchlistId` | ✅ | Delete a user-owned watchlist and its items |
+| GET | `/api/watchlists/:watchlistId/items` | ✅ | List instruments in a user-owned watchlist |
+| POST | `/api/watchlists/:watchlistId/items` | ✅ | Add a canonical instrument snapshot |
+| PATCH | `/api/watchlists/:watchlistId/items/:itemId` | ✅ | Update an item's `sortOrder` |
+| DELETE | `/api/watchlists/:watchlistId/items/:itemId` | ✅ | Remove an item from that watchlist only |
 
 ### Trade Journal
 
@@ -1444,7 +1682,7 @@ UPSTOX_API_KEY=<your-upstox-api-key>
 UPSTOX_API_SECRET=<your-upstox-api-secret>
 UPSTOX_ACCESS_TOKEN=<your-upstox-oauth-token>
 
-# Twelve Data (optional; global alternative provider - not yet implemented)
+# Twelve Data is a stub. This key is not loaded by env.ts and has no effect today.
 # TWELVE_DATA_API_KEY=<your-twelve-data-key>
 
 # Frontend Origin (for CORS)
@@ -1558,21 +1796,20 @@ npm run lint          # Lint both workspaces
    - ❌ Missing: Options/derivatives data
    - Future: Add providers for news, recommendations, and historical prices
 
-2. **Watchlist Backend**: Multi-watchlist database schema and backend endpoints are implemented; frontend UI integration remains pending.
+2. **Watchlist**: Multi-watchlist backend and frontend are implemented.
    - ✅ Done: Multi-watchlist model, canonical embedded items, ownership scoping, validation, and REST CRUD endpoints
-   - ✅ Done: Duplicate name/item prevention and dashboard unique tracked-instrument count
-   - ❌ Missing: Frontend UI for add/remove/view
-   - ❌ Missing: Integration with stock detail pages
-   - ❌ Missing: Live market-data watchlist table
-   - Future: Implement frontend components and live watchlist data
+   - ✅ Done: Duplicate name/item prevention, membership lookup, and dashboard unique tracked-instrument count
+   - ✅ Done: Watchlist page (create/rename/delete, switch lists, add/remove instruments)
+   - ✅ Done: Stock Intelligence add-to-watchlist control
+   - ✅ Done: Batch quote/profile snapshots for list rows, converted with MarketContext currency
+   - Remaining: drag-and-drop item reorder UI (backend reorder exists); per-row fundamentals such as P/E are not fetched for the table
 
 ### Not Yet Implemented
 
-1. **Twelve Data Integration**: Provider scaffolded but not configured.
-   - Requires: API credential setup and configuration
-   - Requires: Implementation of search, profile, quote, news, recommendation methods
-   - Requires: Normalizer functions for Twelve Data payloads
-   - Use Case: Global alternative to Finnhub for redundancy and coverage
+1. **Twelve Data Integration**: Provider scaffolded but not configured (audit: stub; no env key loaded).
+   - Requires: Load an API key in `env.ts`, implement search/profile/quote, and a normalizer
+   - Use Case: Working secondary/fallback for global markets (recommended later; do not add Alpha Vantage or Polygon instead)
+   - Until implemented, non-India markets have no second vendor
 
 2. **Documents & Upload**: Pages scaffolded; backend not implemented.
    - Requires: File upload infrastructure
@@ -1608,10 +1845,11 @@ npm run lint          # Lint both workspaces
 7. **Mobile Optimization**: Research tables are horizontally scrollable and cards are responsive, but full device/browser QA remains outstanding.
 
 8. **Historical Price Data & Charts**: Fundamentals history is available, but historical market-price charting is not implemented.
+   - Confirmed by the 4 September 2026 provider audit: no candle/history API is called
    - Requires: Time-series data storage
-   - Requires: Data aggregation from providers
+   - Requires: Data aggregation from providers (Finnhub `/stock/candle` and Upstox historical candles exist upstream but are unused)
    - Requires: Chart components (candlestick, line, etc.)
-   - Data Source: Extended Finnhub, Upstox, or dedicated provider
+   - Data Source: Extended Finnhub, Upstox, or a later Twelve Data implementation — do not add a fourth vendor family for this unless those fail
 
 ### Infrastructure Improvements
 
@@ -1620,7 +1858,7 @@ npm run lint          # Lint both workspaces
 3. **Background Jobs**: No async job queue; consider for bulk updates, data aggregation
 4. **Monitoring & Logging**: Basic request logging; add structured logging and performance monitoring
 5. **Error Tracking**: No error tracking service; consider Sentry or similar
-6. **Testing**: Trade Journal unit tests run via `npm test` in `server/` (`tsx --test src/services/journal/*.test.ts` plus market-data tests). Coverage includes P&L, calendar days, monthly P&L, win rate, strategy/setup/asset/psychology aggregation, streaks, empty/open trades, user isolation, and date/analytics filters. Broader integration and e2e coverage is still planned.
+6. **Testing**: Server unit tests run via `npm test` in `server/` (journal, market-data search, appearance, and watchlist). Coverage includes P&L, calendar, analytics, watchlist ownership/CRUD/identity/membership, and search normalization. Broader integration and e2e coverage is still planned.
 7. **API Documentation**: OpenAPI/Swagger documentation not generated
 
 ### Known Limitations
@@ -1652,6 +1890,7 @@ npm run lint          # Lint both workspaces
 **Market Data & Providers:**
 - Finnhub provider: search, profile, quote, and recommendation implemented; US profile/quote paths live-verified
 - News Service: Marketaux primary, Finnhub fallback; normalized `NewsItem` returned from `GET /api/stocks/:symbol/news`
+- Provider audit (4 September 2026): current matrix, runtime vs stub, request flow, frontend coupling, missing OHLC, and fallback gaps documented in **Provider Audit**
 - Multi-provider architecture with resolver and fallback logic
 - Normalized data types enforced across all providers
 - Instrument search service with deduplication (up to 20 results)
@@ -1684,11 +1923,11 @@ npm run lint          # Lint both workspaces
 - Reuses existing stock search and market/currency context; historical amounts stay in transaction currency
 
 **Watchlists:**
-- Multi-watchlist backend foundation with user-owned CRUD under `/api/watchlists`
+- Multi-watchlist backend with user-owned CRUD under `/api/watchlists`, plus membership lookup
 - Embedded canonical instrument snapshots with stable ordering and per-list duplicate prevention
 - User-scoped authorization, Zod validation, clean conflict/not-found errors, and existing Activity event logging
 - Dashboard `watchlistCount` counts unique tracked instruments across the user's watchlists
-- Frontend watchlist integration, stock detail actions, and live market-data table remain not yet implemented
+- Watchlist page, stock-detail membership actions, and quote/profile snapshots are implemented
 
 **Currency Conversion:**
 - Centralized display-currency conversion via Frankfurter reference rates
@@ -1709,11 +1948,11 @@ npm run lint          # Lint both workspaces
 - ❌ Recommendations: Not available from Upstox (fallback to Finnhub)
 
 **Watchlist:**
-- ✅ Model defined and database schema ready
-- ✅ Watchlist page polished to the design system as a visual foundation
-- ✅ Backend multi-watchlist CRUD, item ordering, canonical identity, authorization, and duplicate prevention
-- ❌ Frontend API integration and add/remove/view controls not implemented
-- ❌ Live market-data watchlist table not implemented
+- ✅ Multi-watchlist model, backend CRUD, item ordering, canonical identity, authorization, and duplicate prevention
+- ✅ Watchlist page: multiple lists, create/rename/delete, add/remove instruments, empty states
+- ✅ Stock Intelligence add-to-watchlist / membership dialog
+- ✅ Live quote and profile snapshots on the selected list, using MarketContext currency
+- Remaining: no drag-and-drop reorder UI; table does not fetch full fundamentals per row
 
 ### Prepared
 
@@ -1730,7 +1969,7 @@ npm run lint          # Lint both workspaces
 - Historical data and charting
 - Real-time data streams (WebSocket)
 - Role-based access control (RBAC)
-- Comprehensive test suite beyond the Trade Journal unit tests
+- Comprehensive test suite beyond the current server unit tests
 - OpenAPI/Swagger documentation
 - Journal strategy CRUD, attachment uploads, and currency-normalized journal totals
 
@@ -1751,15 +1990,34 @@ npm run lint          # Lint both workspaces
 - Frontend TypeScript check and Vite production build: passed
 - Frontend and backend ESLint: passed
 - Server unit tests via `npm test`: 66 passed, including appearance validation
-- Theme changes are isolated from MarketContext; Watchlist remains a UI foundation only
+- Theme changes are isolated from MarketContext and do not refetch watchlists
+
+### Verification performed (4 September 2026 — Provider audit)
+
+- Read-only audit of Finnhub, Upstox, Marketaux, Frankfurter, and Twelve Data
+- Confirmed Alpha Vantage and Polygon are not in the repository
+- Confirmed the frontend never calls vendor hosts
+- Confirmed historical OHLC/time-series APIs are unused
+- No providers were added, removed, or rewired
+- Documentation updated with the current provider matrix and recommendations in **Provider Audit (4 September 2026)**
+
+### Verification performed (4 September 2026 — Multi-watchlist frontend)
+
+- Phase 1 backend audit: existing model, service, controller, routes, validators, activity logging, and dashboard unique-instrument `watchlistCount` were already present and were not reverted
+- Small backend additions: `GET /api/watchlists/membership`, `POST /api/stocks/snapshots`, and more tolerant instrument matching for search vs profile exchange labels
+- Backend TypeScript compile: passed
+- Frontend TypeScript check and Vite production build: passed
+- ESLint on touched client and server files: passed with the existing `.eslintrc.cjs` compatibility mode; ESLint emitted only its legacy configuration deprecation notice
+- Server unit tests via `npm test`: 89 passed, including watchlist authentication, ownership scoping, create/list/update/delete, item add/list/remove/reorder, identity, membership, validation, and duplicate prevention
+- Interactive browser walkthrough was not available in this session (no browser automation tools). Watchlist and stock-detail routes are wired in `AppRoutes.tsx`
 
 ### Verification performed (4 September 2026 — Multi-watchlist backend foundation)
 
 - Backend TypeScript compile: passed
 - Backend ESLint: passed with the existing `.eslintrc.cjs` compatibility mode; ESLint emitted only its legacy configuration deprecation notice
-- Server unit tests via `npm test`: 84 passed, including watchlist authentication, ownership scoping, create/list/update/delete, item add/list/remove/reorder, identity, validation, and duplicate prevention
+- Server unit tests via `npm test`: 84 passed at that time, including watchlist authentication, ownership scoping, create/list/update/delete, item add/list/remove/reorder, identity, validation, and duplicate prevention
 - Frontend TypeScript check, Vite production build, and ESLint: passed
-- No frontend watchlist integration or live market-data table was added in this backend-only phase
+- That phase did not add frontend watchlist integration; the later frontend phase above completed it
 
 ### Verification performed (31 August 2026 — Trade Journal dashboard, calendar, analytics)
 
@@ -1767,7 +2025,7 @@ npm run lint          # Lint both workspaces
 - Frontend TypeScript check and Vite production build: passed
 - Journal backend and frontend ESLint: passed
 - Server unit tests via `npm test`: 64 passed (journal analytics/calendar/CRUD plus market-data search tests)
-- Watchlist remains model/UI scaffold only; it is not part of the Trade Journal
+- At that time Watchlist was still a model/UI scaffold and was not part of the Trade Journal
 - Interactive browser walkthrough was not available in this session; journal routes are wired in `AppRoutes.tsx` and the Sidebar
 
 ### Verification performed (31 August 2026 — Trade Journal)
@@ -1776,7 +2034,7 @@ npm run lint          # Lint both workspaces
 - Frontend TypeScript check and Vite production build: passed
 - Journal backend and frontend ESLint: passed
 - Journal unit tests: 23 passed via `server` `npm test` (P&L, validation, filters, pagination, create/update/list/delete scoping, user isolation)
-- Watchlist remains model/UI scaffold only; it is not part of the Trade Journal
+- At that time Watchlist was still a model/UI scaffold and was not part of the Trade Journal
 - Interactive browser walkthrough was not available in this session; journal routes are wired in `AppRoutes.tsx` and the Sidebar
 
 ### Verification performed (29 August 2026)
@@ -1797,7 +2055,7 @@ npm run lint          # Lint both workspaces
 
 - **Multi-Market by Default**: 22 country/market entries are configured; adding a market requires registry data and an actually capable provider
 - **Provider Abstraction**: Frontend never sees raw provider responses; only normalized `SearchResult`, `CompanyProfile`, `PriceData`, etc.
-- **Intelligent Fallback**: Finnhub always available as final fallback; graceful degradation if primary provider unavailable
+- **Intelligent Fallback**: Profile/quote/recommendation try the next configured, supporting provider. Finnhub is the working global fallback only when keyed. Twelve Data is a stub. Fundamentals have no second vendor.
 - **Instrument Resolution**: Upstox uses ISIN-based addressing for India; symbol-to-ISIN mapping done by dedicated service with caching
 - **Currency Conversion**: Server-side only; frontend receives pre-converted values in `ConvertedMonetaryValue` structure with full context
 - **Search Deduplication**: By `symbol::exchangeCode` pair; prevents duplicates across providers while preserving market-specific variants

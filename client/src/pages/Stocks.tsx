@@ -6,6 +6,7 @@ import { useMarketContext } from '../context/MarketContext';
 import PageHeader from '../components/PageHeader';
 import StockSearch from '../components/stock/StockSearch';
 import StockHeader from '../components/stock/StockHeader';
+import StockWatchlistControl from '../components/watchlist/StockWatchlistControl';
 import FinancialCard from '../components/stock/FinancialCard';
 import NewsCard from '../components/stock/NewsCard';
 import RecommendationCard from '../components/stock/RecommendationCard';
@@ -258,6 +259,15 @@ const Stocks: React.FC = () => {
         country={profileQuery.data?.country}
         currency={profileQuery.data?.currency}
         loading={profileQuery.isLoading}
+        action={
+          selectedSymbol ? (
+            <StockWatchlistControl
+              symbol={selectedSymbol}
+              market={market}
+              profile={profileQuery.data}
+            />
+          ) : null
+        }
       />
 
       {profileUnavailable ? (

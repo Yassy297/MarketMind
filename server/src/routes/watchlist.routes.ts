@@ -4,6 +4,7 @@ import {
   createWatchlist,
   deleteWatchlist,
   listWatchlistItems,
+  listWatchlistMemberships,
   listWatchlists,
   removeWatchlistItem,
   updateWatchlist,
@@ -16,6 +17,7 @@ const router = Router();
 router.use(requireAuth);
 router.get('/', listWatchlists);
 router.post('/', createWatchlist);
+router.get('/membership', listWatchlistMemberships);
 router.patch('/:watchlistId', updateWatchlist);
 router.delete('/:watchlistId', deleteWatchlist);
 router.get('/:watchlistId/items', listWatchlistItems);

@@ -10,6 +10,7 @@ import {
   getStockProfile,
   getStockQuote,
   getStockShareholding,
+  getStockSnapshots,
   getStockStatements,
   searchStocks
 } from '../controllers/stock.controller';
@@ -19,6 +20,7 @@ const router = Router();
 
 router.get('/search', requireAuth, searchStocks);
 router.get('/recently-viewed', requireAuth, getRecentlyViewed);
+router.post('/snapshots', requireAuth, getStockSnapshots);
 router.get('/:symbol/profile', requireAuth, getStockProfile);
 router.get('/:symbol/quote', requireAuth, getStockQuote);
 router.get('/:symbol/news', requireAuth, getStockNews);

@@ -46,7 +46,8 @@ const RELEVANT_QUERY_KEYS = new Set([
   'stock-statements',
   'stock-shareholding',
   'stock-corporate-actions',
-  'stock-competitors'
+  'stock-competitors',
+  'watchlist-snapshots'
 ]);
 
 const MarketContext = createContext<MarketContextValue | undefined>(undefined);

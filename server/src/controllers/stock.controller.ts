@@ -6,6 +6,7 @@ import type { MarketRequestContext } from '../types/market';
 import { MarketDataError } from '../services/market-data/marketData.errors';
 import { NewsError } from '../services/news/news.errors';
 import type { FinancialStatementOptions } from '../services/market-data/marketData.types';
+import { stockSnapshotsSchema } from '../validators/stock.validators';
 
 const normalizeSymbol = (value: string | string[] | undefined) => {
   const normalized = Array.isArray(value) ? value[0] : value;
@@ -66,6 +67,26 @@ export const searchStocks = async (req: Request, res: Response) => {
     res.json(results);
   } catch (error) {
     sendMarketError(res, error, 'Unable to search stocks.');
+  }
+};
+
+export const getStockSnapshots = async (req: Request, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({ message: 'Authentication required.' });
+      return;
+    }
+    const parsed = stockSnapshotsSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(422).json({
+        message: parsed.error.issues[0]?.message ?? 'Invalid snapshot request.',
+        errors: parsed.error.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message }))
+      });
+      return;
+    }
+    res.json(await stockService.getSnapshots(parsed.data));
+  } catch (error) {
+    sendMarketError(res, error, 'Unable to load watchlist market data.');
   }
 };
 

@@ -7,10 +7,13 @@ import { listWatchlists } from '../controllers/watchlist.controller';
 import {
   addWatchlistItemSchema,
   createWatchlistSchema,
-  updateWatchlistSchema
+  updateWatchlistSchema,
+  watchlistMembershipQuerySchema
 } from '../validators/watchlist.validators';
+import { stockSnapshotsSchema } from '../validators/stock.validators';
 import {
   buildInstrumentIdentityKey,
+  instrumentsMatch,
   WatchlistError,
   WatchlistService
 } from './watchlist.service';
@@ -64,6 +67,30 @@ describe('watchlist identity', () => {
       'IN:NSE:isin:INE040A01034'
     );
   });
+
+  it('matches the same listing when exchange labels differ', () => {
+    assert.equal(
+      instrumentsMatch(
+        { symbol: 'AAPL', market: 'US', exchange: 'NASDAQ NMS', identityKey: 'US:NASDAQ NMS:symbol:AAPL' },
+        { symbol: 'AAPL', market: 'US', exchange: 'NASDAQ', identityKey: 'US:NASDAQ:symbol:AAPL' }
+      ),
+      true
+    );
+    assert.equal(
+      instrumentsMatch(
+        { symbol: 'HDFCBANK.NS', market: 'IN', exchange: 'NSE', isin: 'INE040A01034' },
+        { symbol: 'HDFCBANK', market: 'IN', exchange: 'National Stock Exchange', isin: 'ine040a01034' }
+      ),
+      true
+    );
+    assert.equal(
+      instrumentsMatch(
+        { symbol: 'HDFCBANK.NS', market: 'IN', exchange: 'NSE' },
+        { symbol: 'HDFCBANK.BO', market: 'IN', exchange: 'BSE' }
+      ),
+      false
+    );
+  });
 });
 
 describe('watchlist validation', () => {
@@ -97,6 +124,22 @@ describe('watchlist validation', () => {
   it('allows a description to be cleared during an update', () => {
     const result = updateWatchlistSchema.parse({ description: '' });
     assert.equal(result.description, '');
+  });
+
+  it('requires a symbol for membership lookup', () => {
+    assert.equal(watchlistMembershipQuerySchema.safeParse({}).success, false);
+    assert.equal(watchlistMembershipQuerySchema.parse({ symbol: ' aapl ', market: 'us' }).symbol, 'AAPL');
+  });
+
+  it('rejects oversized snapshot requests', () => {
+    assert.equal(stockSnapshotsSchema.safeParse({ instruments: [] }).success, false);
+    assert.equal(
+      stockSnapshotsSchema.safeParse({
+        instruments: Array.from({ length: 41 }, (_, index) => ({ symbol: `SYM${index}` }))
+      }).success,
+      false
+    );
+    assert.equal(stockSnapshotsSchema.parse({ instruments: [{ symbol: ' tsla ' }] }).instruments[0]?.symbol, 'TSLA');
   });
 });
 
@@ -267,6 +310,35 @@ describe('watchlist service ownership and CRUD', () => {
     assert.equal(result.id, itemId.toString());
   });
 
+  it('rejects an item whose ISIN already exists even when exchange labels differ', async () => {
+    const item = {
+      _id: itemId,
+      identityKey: 'IN:NSE:isin:INE040A01034',
+      symbol: 'HDFCBANK.NS',
+      displaySymbol: 'HDFCBANK',
+      companyName: 'HDFC Bank',
+      market: 'IN',
+      exchange: 'NSE',
+      isin: 'INE040A01034',
+      sortOrder: 0,
+      addedAt: new Date()
+    };
+    mock.method(Watchlist, 'findOne', () => query(watchlistDocument({ items: [item] })));
+
+    await assert.rejects(
+      () =>
+        new WatchlistService().addItem(userId, watchlistId, {
+          symbol: 'HDFCBANK',
+          displaySymbol: 'HDFCBANK',
+          companyName: 'HDFC Bank',
+          market: 'IN',
+          exchange: 'National Stock Exchange',
+          isin: 'INE040A01034'
+        }),
+      (error: unknown) => error instanceof WatchlistError && error.status === 409
+    );
+  });
+
   it('atomically rejects an item already present in the scoped watchlist', async () => {
     const item = {
       _id: itemId,
@@ -349,5 +421,43 @@ describe('watchlist service ownership and CRUD', () => {
     const identity = buildInstrumentIdentityKey({ symbol: 'AAPL', market: 'US', exchange: 'NASDAQ' });
     assert.equal(identity, buildInstrumentIdentityKey({ symbol: 'AAPL', market: 'US', exchange: 'NASDAQ' }));
     assert.notEqual(identity, buildInstrumentIdentityKey({ symbol: 'AAPL', market: 'US', exchange: 'NYSE' }));
+  });
+
+  it('finds membership only on the authenticated user’s watchlists', async () => {
+    let receivedFilter: Record<string, unknown> | undefined;
+    mock.method(Watchlist, 'find', (filter: Record<string, unknown>) => {
+      receivedFilter = filter;
+      return {
+        sort: () =>
+          query([
+            watchlistDocument({
+              items: [
+                {
+                  _id: itemId,
+                  identityKey: 'US:NASDAQ NMS:symbol:AAPL',
+                  symbol: 'AAPL',
+                  displaySymbol: 'AAPL',
+                  companyName: 'Apple',
+                  market: 'US',
+                  exchange: 'NASDAQ NMS',
+                  sortOrder: 0,
+                  addedAt: new Date()
+                }
+              ]
+            })
+          ])
+      } as never;
+    });
+
+    const result = await new WatchlistService().findMemberships(userId, {
+      symbol: 'AAPL',
+      market: 'US',
+      exchange: 'NASDAQ'
+    });
+
+    assert.equal(String(receivedFilter?.userId), userId);
+    assert.equal(result.memberships.length, 1);
+    assert.equal(result.memberships[0]?.watchlistId, watchlistId);
+    assert.equal(result.memberships[0]?.itemId, itemId.toString());
   });
 });

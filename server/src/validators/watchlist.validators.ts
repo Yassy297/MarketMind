@@ -70,7 +70,17 @@ export const updateWatchlistItemSchema = z.object({
   sortOrder: z.number().finite().int().min(0, 'Sort order cannot be negative.')
 });
 
+export const watchlistMembershipQuerySchema = z.object({
+  instrumentId: optionalText(120),
+  instrumentKey: optionalText(160),
+  symbol: z.string().trim().min(1, 'Instrument symbol is required.').max(80).transform((value) => value.toUpperCase()),
+  market,
+  exchange: optionalText(80),
+  isin: optionalText(40).transform((value) => value?.toUpperCase())
+});
+
 export type CreateWatchlistInput = z.infer<typeof createWatchlistSchema>;
 export type UpdateWatchlistInput = z.infer<typeof updateWatchlistSchema>;
 export type AddWatchlistItemInput = z.infer<typeof addWatchlistItemSchema>;
 export type UpdateWatchlistItemInput = z.infer<typeof updateWatchlistItemSchema>;
+export type WatchlistMembershipQuery = z.infer<typeof watchlistMembershipQuerySchema>;

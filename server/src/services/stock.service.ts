@@ -5,6 +5,7 @@ import { isCurrencyCode } from '../config/currencies';
 import { MARKET_CONFIG } from '../config/markets';
 import { marketDataService } from './market-data/marketData.service';
 import { newsService } from './news/news.service';
+import type { StockSnapshotsInput } from '../validators/stock.validators';
 import type {
   AnalystRecommendation,
   CompetitorsResearch,
@@ -19,6 +20,13 @@ import type {
   SearchResult,
   ShareholdingResearch
 } from './market-data/marketData.types';
+
+export type StockSnapshot = {
+  symbol: string;
+  market?: MarketRequestContext['market'];
+  quote: PriceData | null;
+  profile: CompanyProfile | null;
+};
 
 class StockService {
   async searchStocks(query: string, context: MarketRequestContext = {}): Promise<SearchResult[]> {
@@ -47,6 +55,37 @@ class StockService {
 
   async getStock(symbol: string, context: MarketRequestContext = {}): Promise<NormalizedStockData> {
     return marketDataService.getStock(symbol, context);
+  }
+
+  async getSnapshots(input: StockSnapshotsInput): Promise<{ snapshots: StockSnapshot[] }> {
+    const seen = new Set<string>();
+    const unique = input.instruments.filter((instrument) => {
+      const key = `${instrument.symbol}:${instrument.market ?? ''}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    const snapshots = await Promise.all(
+      unique.map(async (instrument) => {
+        const context: MarketRequestContext = {
+          market: instrument.market,
+          displayCurrency: input.currency
+        };
+        const [quote, profile] = await Promise.all([
+          this.getStockQuote(instrument.symbol, context).catch(() => null),
+          this.getStockProfile(instrument.symbol, context).catch(() => null)
+        ]);
+        return {
+          symbol: instrument.symbol,
+          market: instrument.market,
+          quote,
+          profile
+        };
+      })
+    );
+
+    return { snapshots };
   }
 
   async getFundamentals(

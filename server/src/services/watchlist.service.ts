@@ -5,7 +5,8 @@ import type {
   AddWatchlistItemInput,
   CreateWatchlistInput,
   UpdateWatchlistInput,
-  UpdateWatchlistItemInput
+  UpdateWatchlistItemInput,
+  WatchlistMembershipQuery
 } from '../validators/watchlist.validators';
 
 type InstrumentIdentity = Pick<
@@ -24,6 +25,69 @@ export class WatchlistError extends Error {
 }
 
 const normalizePart = (value?: string) => value?.trim().toUpperCase() ?? '';
+
+const EXCHANGE_ALIASES: Record<string, string> = {
+  NSE: 'NSE',
+  'NATIONAL STOCK EXCHANGE': 'NSE',
+  'NATIONAL STOCK EXCHANGE OF INDIA': 'NSE',
+  BSE: 'BSE',
+  'BOMBAY STOCK EXCHANGE': 'BSE',
+  NASDAQ: 'NASDAQ',
+  'NASDAQ NMS': 'NASDAQ',
+  XNAS: 'NASDAQ',
+  NYSE: 'NYSE',
+  'NEW YORK STOCK EXCHANGE': 'NYSE',
+  'NEW YORK STOCK EXCHANGE INC': 'NYSE'
+};
+
+const normalizeExchange = (value?: string) => {
+  const cleaned = value?.trim().toUpperCase().replace(/[.,]/g, '').replace(/\s+/g, ' ') ?? '';
+  if (!cleaned) return '';
+  return EXCHANGE_ALIASES[cleaned] ?? cleaned;
+};
+
+const valuesCompatible = (left?: string, right?: string) => {
+  if (!left || !right) return true;
+  return left === right;
+};
+
+type MatchableInstrument = InstrumentIdentity & {
+  identityKey?: string;
+  instrumentKey?: string;
+};
+
+/**
+ * Membership and duplicate checks prefer identityKey, then ISIN / instrument
+ * identifiers, then symbol + market. Exchange aliases keep search results and
+ * company profiles from looking like different listings of the same stock.
+ */
+export const instrumentsMatch = (left: MatchableInstrument, right: MatchableInstrument): boolean => {
+  if (left.identityKey && right.identityKey && left.identityKey === right.identityKey) return true;
+
+  const leftMarket = normalizePart(left.market);
+  const rightMarket = normalizePart(right.market);
+  if (!valuesCompatible(leftMarket, rightMarket)) return false;
+
+  const leftIsin = normalizePart(left.isin);
+  const rightIsin = normalizePart(right.isin);
+  if (leftIsin && rightIsin && leftIsin === rightIsin) return true;
+
+  const leftInstrumentId = normalizePart(left.instrumentId);
+  const rightInstrumentId = normalizePart(right.instrumentId);
+  if (leftInstrumentId && rightInstrumentId && leftInstrumentId === rightInstrumentId) return true;
+
+  const leftInstrumentKey = normalizePart(left.instrumentKey);
+  const rightInstrumentKey = normalizePart(right.instrumentKey);
+  if (leftInstrumentKey && rightInstrumentKey && leftInstrumentKey === rightInstrumentKey) {
+    return valuesCompatible(normalizeExchange(left.exchange), normalizeExchange(right.exchange));
+  }
+
+  return (
+    Boolean(normalizePart(left.symbol)) &&
+    normalizePart(left.symbol) === normalizePart(right.symbol) &&
+    valuesCompatible(normalizeExchange(left.exchange), normalizeExchange(right.exchange))
+  );
+};
 
 /**
  * The key uses the strongest stable identity available, while retaining market
@@ -219,7 +283,7 @@ export class WatchlistService {
     const watchlist = await this.getWatchlist(userId, watchlistId);
     const identityKey = buildInstrumentIdentityKey(input);
     const existingItems = allItemRecords(watchlist);
-    if (existingItems.some((item) => item.identityKey === identityKey)) {
+    if (existingItems.some((item) => instrumentsMatch(item, { ...input, identityKey }))) {
       throw new WatchlistError(409, 'This instrument is already in the watchlist.');
     }
 
@@ -237,7 +301,7 @@ export class WatchlistService {
 
     if (!updated) {
       const current = await this.getWatchlist(userId, watchlistId);
-      if (current.items.some((entry) => entry.identityKey === identityKey)) {
+      if (current.items.some((entry) => instrumentsMatch(entry, { ...input, identityKey }))) {
         throw new WatchlistError(409, 'This instrument is already in the watchlist.');
       }
       throw new WatchlistError(404, 'Watchlist not found.');
@@ -271,6 +335,30 @@ export class WatchlistService {
       symbol: removed.symbol,
       name: removed.companyName
     });
+  }
+
+  async findMemberships(userId: string, input: WatchlistMembershipQuery) {
+    const userObjectId = requireObjectId(userId, 'user id');
+    const identityKey = buildInstrumentIdentityKey(input);
+    const target = { ...input, identityKey };
+    const watchlists = await Watchlist.find({ userId: userObjectId })
+      .sort({ sortOrder: 1, createdAt: 1 })
+      .exec();
+
+    return {
+      memberships: watchlists.flatMap((watchlist) => {
+        const match = allItemRecords(watchlist).find((item) => instrumentsMatch(item, target));
+        if (!match) return [];
+        return [
+          {
+            watchlistId: watchlist._id.toString(),
+            watchlistName: watchlist.name || 'My Watchlist',
+            itemId: match.id,
+            identityKey: match.identityKey
+          }
+        ];
+      })
+    };
   }
 
   async updateItem(userId: string, watchlistId: string, itemId: string, input: UpdateWatchlistItemInput) {

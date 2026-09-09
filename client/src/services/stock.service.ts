@@ -56,6 +56,7 @@ export type SearchResult = {
   isin: string | null;
   instrumentType: string | null;
   provider: 'finnhub' | 'upstox' | 'twelveData';
+  providerInstrumentKey?: string;
 };
 
 export type StockProfile = {
@@ -218,6 +219,33 @@ export async function fetchStockCompetitors(
     params: marketParams(context)
   });
   return response.data;
+}
+
+export type StockSnapshot = {
+  symbol: string;
+  market?: MarketCode;
+  quote: StockQuote | null;
+  profile: StockProfile | null;
+};
+
+export async function fetchStockSnapshots(
+  instruments: Array<{ symbol: string; market?: MarketCode }>,
+  currency?: CurrencyCode | null
+): Promise<StockSnapshot[]> {
+  if (instruments.length === 0) return [];
+  const chunks: Array<Array<{ symbol: string; market?: MarketCode }>> = [];
+  for (let index = 0; index < instruments.length; index += 40) {
+    chunks.push(instruments.slice(index, index + 40));
+  }
+  const responses = await Promise.all(
+    chunks.map((chunk) =>
+      api.post<{ snapshots: StockSnapshot[] }>('/api/stocks/snapshots', {
+        instruments: chunk,
+        currency: currency ?? undefined
+      })
+    )
+  );
+  return responses.flatMap((response) => response.data.snapshots);
 }
 
 export async function fetchRecentlyViewed(): Promise<
